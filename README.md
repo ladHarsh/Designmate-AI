@@ -34,7 +34,7 @@ A full-stack web application that empowers UI/UX designers with intelligent desi
 - **Frontend**: React.js, Tailwind CSS
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB
-- **AI/ML**: Python microservices, OpenAI APIs (GPT, Whisper)
+- **AI/ML**: Python microservices, Gemini APIs (GPT, Whisper)
 - **Deployment**: Vercel (frontend), Render/Railway (backend + ML services)
 
 ## 🚀 Quick Start
@@ -43,7 +43,7 @@ A full-stack web application that empowers UI/UX designers with intelligent desi
 - Node.js (v16 or higher)
 - MongoDB
 - Python 3.8+ (for ML services)
-- OpenAI API key
+- Gemini API key
 
 ### Installation
 
@@ -55,7 +55,7 @@ A full-stack web application that empowers UI/UX designers with intelligent desi
 
 2. **Install dependencies**
    ```bash
-   npm run install-all
+   npm i 
    ```
 
 3. **Environment Setup**
@@ -67,18 +67,17 @@ A full-stack web application that empowers UI/UX designers with intelligent desi
 
 4. **Configure environment variables**
    - Add your MongoDB connection string
-   - Add your OpenAI API key
+   - Add your Gemini API key
    - Configure other service keys as needed
 
 5. **Start the development servers**
    ```bash
-   npm run dev
+   npm start
    ```
 
 The application will be available at:
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5000
-- ML Services: http://localhost:8000
 
 ## 📁 Project Structure
 
@@ -126,29 +125,3 @@ designmate-ai/
 ### Design Trends
 - `GET /api/trends/current` - Get current trends
 - `GET /api/trends/platforms` - Get platform-specific trends
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- OpenAI for providing the AI capabilities
-- Dribbble and Behance for design inspiration
-- The open-source community for amazing tools and libraries
-
-## 📞 Support
-
-For support, email support@designmate-ai.com or join our Slack channel.
-
----
-
-Made with ❤️ by the DesignMate AI Team 
