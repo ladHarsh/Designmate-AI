@@ -1,7 +1,7 @@
 const express = require('express');
 const { auth, checkUsageLimit } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { generateFontSuggestionsWithAI } = require('../services/aiService');
+const { generateFontSuggestionsWithAI, buildFontSuggestionsPrompt } = require('../services/aiService');
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ const router = express.Router();
 // @desc    Generate font suggestions using AI
 // @access  Private
 router.post('/suggest', auth, checkUsageLimit('fontSuggestions'), asyncHandler(async (req, res) => {
-  const { prompt, industry, tone, usage } = req.body;
+  const { prompt, industry, tone, usage, model = 'gemini-2.5-pro' } = req.body;
 
   if (!prompt || !industry || !tone) {
     return res.status(400).json({
@@ -24,7 +24,8 @@ router.post('/suggest', auth, checkUsageLimit('fontSuggestions'), asyncHandler(a
       prompt,
       industry,
       tone,
-      usage: usage || 'web'
+      usage: usage || 'web',
+      model
     });
 
     // Update user usage

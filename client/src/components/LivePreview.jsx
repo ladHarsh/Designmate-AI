@@ -34,6 +34,11 @@ const LivePreview = ({ layout }) => {
         
         // Add a small delay to ensure content is rendered
         setTimeout(() => {
+          console.log('🔍 LivePreview: Checking content after delay');
+          console.log('🔍 LivePreview: Document body exists:', !!newWindow.document.body);
+          console.log('🔍 LivePreview: Body innerHTML length:', newWindow.document.body?.innerHTML?.length);
+          console.log('🔍 LivePreview: Body innerHTML preview:', newWindow.document.body?.innerHTML?.substring(0, 200));
+          
           if (newWindow.document.body && newWindow.document.body.innerHTML.trim() === '') {
             console.warn('⚠️ LivePreview: Content not rendered, trying alternative method');
             newWindow.location.reload();

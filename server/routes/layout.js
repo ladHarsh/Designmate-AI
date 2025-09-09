@@ -11,11 +11,6 @@ const router = express.Router();
 // @desc    Generate layout using AI
 // @access  Private
 router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler(async (req, res) => {
-  console.log('🚀 Backend: Layout generation request received');
-  console.log('📋 Backend: Raw request body:', JSON.stringify(req.body, null, 2));
-  console.log('👤 Backend: User making request:', req.user?.email || 'Unknown');
-  console.log('🌐 Backend: Request headers:', req.headers);
-  
   const Joi = require('joi');
   const schema = Joi.object({
     prompt: Joi.string().allow('').optional(),
@@ -36,22 +31,6 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
 
   const { prompt, layoutType, style, description, components, colorScheme, industry, targetAudience } = value;
 
-  // Console log the processed data before sending to AI service
-  console.log('✅ Backend: Request validation passed');
-  console.log('🔧 Backend: Processed request data:', {
-    prompt,
-    layoutType,
-    style: style || 'modern',
-    description,
-    userPreferences: req.user.preferences,
-    components,
-    colorScheme,
-    industry,
-    targetAudience
-  });
-  console.log('📝 Backend: Final prompt being sent to AI:', prompt);
-  console.log('🤖 Backend: Calling generateLayoutWithAI...');
-
   try {
     // Generate layout using AI
     const aiResponse = await generateLayoutWithAI({
@@ -65,24 +44,6 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
       targetAudience
     });
 
-    console.log('✅ Backend: AI service completed successfully');
-    console.log('🤖 Backend: AI Response received:', {
-      hasHtmlCode: !!aiResponse.htmlCode,
-      hasCssCode: !!aiResponse.cssCode,
-      htmlCodeLength: aiResponse.htmlCode?.length || 0,
-      cssCodeLength: aiResponse.cssCode?.length || 0,
-      componentsCount: aiResponse.components?.length || 0,
-      title: aiResponse.title,
-      layoutType: aiResponse.layoutType,
-      style: aiResponse.style
-    });
-    console.log('🔍 Backend: Full AI response structure:', Object.keys(aiResponse));
-    // Print full HTML to console (can be large)
-    if (aiResponse.htmlCode) {
-      console.log('🧾 Backend: Full HTML code (below)');
-      console.log(aiResponse.htmlCode);
-    }
-    console.log('💾 Backend: Creating layout in database...');
 
     // Create layout in database
     // Defensive output validation of AI response
@@ -112,24 +73,12 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
       aiModel: aiResponse.aiModel || 'gemini-2.5-pro'
     });
 
-    console.log('✅ Backend: Layout saved to database successfully');
-    console.log('🆔 Backend: Layout ID:', layout._id);
-    console.log('📊 Backend: Layout components count:', layout.components?.length || 0);
-    console.log('🎨 Backend: Layout has HTML/CSS:', {
-      hasHtml: !!layout.htmlCode,
-      hasCss: !!layout.cssCode,
-      htmlLength: layout.htmlCode?.length || 0,
-      cssLength: layout.cssCode?.length || 0
-    });
 
     // Update user usage
-    console.log('👤 Backend: Updating user usage...');
     const user = await User.findById(req.user.id);
     user.usage.layoutsGenerated += 1;
     await user.save();
-    console.log('✅ Backend: User usage updated');
 
-    console.log('📤 Backend: Sending response to frontend...');
     res.status(201).json({
       success: true,
       message: 'Layout generated successfully',
@@ -137,12 +86,8 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
         layout
       }
     });
-    console.log('✅ Backend: Response sent successfully');
   } catch (error) {
-    console.error('❌ Backend: Layout generation error occurred');
-    console.error('🔍 Backend: Error details:', error);
-    console.error('📊 Backend: Error message:', error.message);
-    console.error('🌐 Backend: Error stack:', error.stack);
+    console.error('Layout generation error:', error);
     
     res.status(500).json({
       success: false,

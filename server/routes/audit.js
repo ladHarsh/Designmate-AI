@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { auth, checkUsageLimit } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { performUXAuditWithAI } = require('../services/aiService');
+const { performUXAuditWithAI, buildUXAuditPrompt } = require('../services/aiService');
 const User = require('../models/User');
 
 const router = express.Router();
@@ -44,7 +44,7 @@ const upload = multer({
 // @desc    Analyze uploaded design for UX issues
 // @access  Private
 router.post('/analyze', auth, checkUsageLimit('auditsPerformed'), upload.single('image'), asyncHandler(async (req, res) => {
-  const { context, focusAreas, description } = req.body;
+  const { context, focusAreas, description, model = 'gemini-2.5-pro' } = req.body;
 
   if (!req.file && !description) {
     return res.status(400).json({
@@ -62,7 +62,8 @@ router.post('/analyze', auth, checkUsageLimit('auditsPerformed'), upload.single(
       imageUrl,
       description,
       context: context || 'general web application',
-      focusAreas: focusAreas || 'all'
+      focusAreas: focusAreas || ['all'],
+      model
     });
 
     // Normalize audit result to ensure required fields exist

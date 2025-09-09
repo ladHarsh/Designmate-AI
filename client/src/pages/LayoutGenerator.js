@@ -15,7 +15,6 @@ import {
 import { layoutAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 // html2canvas will be dynamically imported when needed
-import LayoutRenderer from '../components/LayoutRenderer'; // Added import for LayoutRenderer
 import LivePreview from '../components/LivePreview';
 
 // Open source images for different layout types

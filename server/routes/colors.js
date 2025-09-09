@@ -3,7 +3,7 @@ const { auth, checkUsageLimit } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const ColorPalette = require('../models/ColorPalette');
 const User = require('../models/User');
-const { generateColorPaletteWithAI } = require('../services/aiService');
+const { generateColorPaletteWithAI, buildColorPalettePrompt } = require('../services/aiService');
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const router = express.Router();
 // @desc    Generate color palette using AI
 // @access  Private
 router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncHandler(async (req, res) => {
-  const { prompt, mood, industry, paletteType } = req.body;
+  const { prompt, mood, industry, paletteType, model = 'gemini-2.5-pro' } = req.body;
 
   if (!prompt || !mood) {
     return res.status(400).json({
@@ -25,37 +25,24 @@ router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncH
     const aiResponse = await generateColorPaletteWithAI({
       prompt,
       mood,
-      industry: industry || 'other',
-      paletteType: paletteType || 'custom'
+      industry: industry || 'technology',
+      paletteType: paletteType || 'custom',
+      model
     });
 
-    // Fallbacks and normalization in case AI response is missing fields
-    const capitalize = (s) => (typeof s === 'string' && s.length ? s.charAt(0).toUpperCase() + s.slice(1) : 'Palette');
-    const safeName = aiResponse?.name || `Palette - ${capitalize(mood)}`;
-    const safeDescription = aiResponse?.description || 'AI generated color palette';
-
-    // If AI returns an array of HEX values, map to schema-compatible structure
-    const normalizedColors = Array.isArray(aiResponse?.colors)
-      ? {
-          neutral: aiResponse.colors
-            .filter(Boolean)
-            .map((hex) => ({ hex }))
-        }
-      : aiResponse?.colors || {};
-
-    // Create color palette in database
+    // Create color palette in database using normalized AI response
     const colorPalette = await ColorPalette.create({
       user: req.user.id,
-      name: safeName,
-      description: safeDescription,
+      name: aiResponse.name,
+      description: aiResponse.description,
       prompt,
-      colors: normalizedColors,
+      colors: aiResponse.colors,
       paletteType: aiResponse.paletteType,
-      mood,
-      industry: industry || 'other',
+      mood: aiResponse.mood,
+      industry: aiResponse.industry,
       accessibility: aiResponse.accessibility,
       usage: aiResponse.usage,
-      tags: aiResponse.tags || []
+      tags: aiResponse.tags
     });
 
     // Check accessibility
