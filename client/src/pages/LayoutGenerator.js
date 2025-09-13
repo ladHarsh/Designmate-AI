@@ -49,6 +49,7 @@ const LayoutGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLayouts, setGeneratedLayouts] = useState([]);
   const [error, setError] = useState('');
+  const [layoutErrors, setLayoutErrors] = useState({});
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
 
   const previewRef = useRef();
@@ -125,45 +126,30 @@ const LayoutGenerator = () => {
         components: formData.components,
         colorScheme: formData.colorScheme,
         industry: formData.industry,
-        targetAudience: formData.targetAudience
+        targetAudience: formData.targetAudience,
+        // Request server to include prompt debug in response
+        debug: true
       };
       
-      // Console log the payload being sent to the API
-      console.log('🚀 Frontend: Starting layout generation...');
-      console.log('📋 Frontend: Form data:', JSON.stringify(formData, null, 2));
-      console.log('📦 Frontend: Payload being sent to API:', JSON.stringify(payload, null, 2));
-      console.log('📝 Frontend: Generated prompt:', payload.prompt);
-      console.log('🌐 Frontend: API URL:', process.env.REACT_APP_API_URL || '/api');
-      console.log('📡 Frontend: Making POST request to /api/layout/generate');
       
       const response = await layoutAPI.generate(payload);
-      console.log('✅ Frontend: API response received');
-      console.log('📊 Frontend: Response status:', response.status);
-      console.log('📄 Frontend: Response data structure:', Object.keys(response.data));
-      console.log('🎨 Frontend: Layout components:', response.data.data.layout.components);
-      console.log('🔍 Frontend: Full response data:', JSON.stringify(response.data, null, 2));
       // The API returns a single layout in response.data.data.layout
       const layout = response.data.data.layout;
-      // Map the API response to the frontend format
-      setGeneratedLayouts([
-        {
-          id: layout._id || layout.id,
-          name: layout.title || layout.layoutType || 'Generated Layout',
-          description: layout.description,
-          preview: '', // You can add a preview if available
-          components: layout.components || [],
-          score: layout.rating?.average || 9.0,
-          tags: layout.tags || [],
-          ...layout
-        }
-      ]);
-    } catch (error) {
-      console.error('❌ Frontend: Error occurred during layout generation');
-      console.error('🔍 Frontend: Error details:', error);
-      console.error('📊 Frontend: Error response:', error.response?.data);
-      console.error('🌐 Frontend: Error status:', error.response?.status);
-      console.error('📡 Frontend: Error config:', error.config);
       
+      // Map the API response to the frontend format
+      const processedLayout = {
+        id: layout._id || layout.id,
+        name: layout.title || layout.layoutType || 'Generated Layout',
+        description: layout.description,
+        preview: '', // You can add a preview if available
+        components: layout.components || [],
+        score: layout.rating?.average || 9.0,
+        tags: layout.tags || [],
+        ...layout
+      };
+      
+      setGeneratedLayouts([processedLayout]);
+    } catch (error) {
       setError(
         error.response?.data?.message ||
         error.message ||
@@ -539,14 +525,70 @@ const LayoutGenerator = () => {
                         </p>
 
 
+                        {/* Layout Details */}
+                        <div className="mb-6">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-sm text-gray-500">Type</div>
+                              <div className="font-semibold text-gray-900 capitalize">
+                                {layout.layoutType?.replace('-', ' ')}
+                              </div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-sm text-gray-500">Style</div>
+                              <div className="font-semibold text-gray-900 capitalize">
+                                {layout.style}
+                              </div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-sm text-gray-500">Industry</div>
+                              <div className="font-semibold text-gray-900">
+                                {layout.industry}
+                              </div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-sm text-gray-500">Components</div>
+                              <div className="font-semibold text-gray-900">
+                                {layout.components?.length || 0}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+
+                        {/* Error Display */}
+                        {layoutErrors[layout.id] && (
+                          <div className="mb-6">
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-center mb-2">
+                                <div className="flex-shrink-0">
+                                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                                <div className="ml-3">
+                                  <h3 className="text-sm font-medium text-red-800">
+                                    Error: {layoutErrors[layout.id].message}
+                                  </h3>
+                                </div>
+                              </div>
+                              <div className="mt-2 text-sm text-red-700">
+                                <p><strong>Type:</strong> {layoutErrors[layout.id].type}</p>
+                                <p><strong>Details:</strong> {layoutErrors[layout.id].details}</p>
+                                <p><strong>Time:</strong> {new Date(layoutErrors[layout.id].timestamp).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Live Preview Button */}
                         <div className="mb-6">
                           <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Live Preview</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Full Live Preview</h3>
                                 <p className="text-gray-600 text-sm">
-                                  Open the complete layout in a new page with all API response data
+                                  Open the complete layout in a new page with all API response data and detailed information
                                 </p>
                               </div>
                               <LivePreview layout={layout} />

@@ -11,7 +11,7 @@ const router = express.Router();
 // @desc    Generate color palette using AI
 // @access  Private
 router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncHandler(async (req, res) => {
-  const { prompt, mood, industry, paletteType, model = 'gemini-2.5-pro' } = req.body;
+  const { prompt, mood, industry, paletteType, model = 'gemini-2.5-pro', baseColor } = req.body;
 
   if (!prompt || !mood) {
     return res.status(400).json({
@@ -30,6 +30,62 @@ router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncH
       model
     });
 
+    // If a baseColor is provided, synthesize gradients based on it (independent of AI)
+    const toHex = (hex) => {
+      if (!hex || typeof hex !== 'string') return null;
+      const v = hex.trim();
+      return v.startsWith('#') ? v : `#${v}`;
+    };
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+    const hexToRgb = (hex) => {
+      const h = hex.replace('#', '');
+      const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+      return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+    };
+    const rgbToHex = ({ r, g, b }) => '#' + [r, g, b].map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0')).join('');
+    const mix = (c1, c2, t) => ({ r: c1.r + (c2.r - c1.r) * t, g: c1.g + (c2.g - c1.g) * t, b: c1.b + (c2.b - c1.b) * t });
+    const lighten = (hex, amt = 0.2) => rgbToHex(mix(hexToRgb(hex), { r: 255, g: 255, b: 255 }, amt));
+    const darken = (hex, amt = 0.2) => rgbToHex(mix(hexToRgb(hex), { r: 0, g: 0, b: 0 }, amt));
+
+    let gradientsFromBase = null;
+    const base = toHex(baseColor);
+    if (base) {
+      const light = lighten(base, 0.25);
+      const dark = darken(base, 0.25);
+      gradientsFromBase = {
+        primary: {
+          linear: `linear-gradient(135deg, ${light} 0%, ${dark} 100%)`,
+          radial: `radial-gradient(circle, ${light} 0%, ${dark} 100%)`,
+          usage: 'Hero, buttons'
+        },
+        accent: {
+          linear: `linear-gradient(45deg, ${base} 0%, ${light} 100%)`,
+          radial: `radial-gradient(ellipse, ${base} 0%, ${light} 100%)`,
+          usage: 'CTAs, highlights'
+        },
+        neutral: {
+          linear: `linear-gradient(180deg, ${light} 0%, #FFFFFF 100%)`,
+          usage: 'Background overlays'
+        },
+        complementary: {
+          linear: `linear-gradient(90deg, ${dark} 0%, ${aiResponse?.colors?.secondary?.hex || light} 100%)`,
+          radial: `radial-gradient(circle, ${dark} 0%, ${aiResponse?.colors?.secondary?.hex || light} 100%)`,
+          usage: 'Headers, section dividers'
+        },
+        // Mixed gradients that combine user base color with AI primary/accent
+        mix: {
+          basePrimary: aiResponse?.colors?.primary?.hex ? {
+            linear: `linear-gradient(135deg, ${base} 0%, ${aiResponse.colors.primary.hex} 100%)`,
+            usage: 'Base → AI primary'
+          } : undefined,
+          baseAccent: aiResponse?.colors?.accent?.hex ? {
+            linear: `linear-gradient(135deg, ${base} 0%, ${aiResponse.colors.accent.hex} 100%)`,
+            usage: 'Base → AI accent'
+          } : undefined
+        }
+      };
+    }
+
     // Create color palette in database using normalized AI response
     const colorPalette = await ColorPalette.create({
       user: req.user.id,
@@ -37,9 +93,18 @@ router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncH
       description: aiResponse.description,
       prompt,
       colors: aiResponse.colors,
-      paletteType: aiResponse.paletteType,
-      mood: aiResponse.mood,
-      industry: aiResponse.industry,
+      gradients: (gradientsFromBase ? { ...aiResponse.gradients, ...gradientsFromBase } : aiResponse.gradients),
+      combinations: {
+        baseAndAI: [
+          base || null,
+          aiResponse?.colors?.primary?.hex || null,
+          aiResponse?.colors?.secondary?.hex || null,
+          aiResponse?.colors?.accent?.hex || null
+        ].filter(Boolean)
+      },
+      paletteType: aiResponse.paletteType || paletteType || 'custom',
+      mood: aiResponse.mood || mood || 'professional',
+      industry: aiResponse.industry || industry || 'other',
       accessibility: aiResponse.accessibility,
       usage: aiResponse.usage,
       tags: aiResponse.tags
@@ -57,7 +122,9 @@ router.post('/generate', auth, checkUsageLimit('colorPalettesGenerated'), asyncH
       success: true,
       message: 'Color palette generated successfully',
       data: {
-        colorPalette
+        // Return both: saved palette (constrained by schema) and the full normalized AI palette
+        colorPalette,
+        aiPalette: aiResponse
       }
     });
   } catch (error) {

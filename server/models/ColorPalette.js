@@ -103,6 +103,45 @@ const colorPaletteSchema = new mongoose.Schema({
       }
     }
   },
+  gradients: {
+    primary: {
+      linear: String,
+      radial: String,
+      usage: String
+    },
+    accent: {
+      linear: String,
+      radial: String,
+      usage: String
+    },
+    neutral: {
+      linear: String,
+      usage: String
+    },
+    glass: {
+      backdrop: String,
+      border: String,
+      usage: String
+    },
+    mix: {
+      basePrimary: {
+        linear: String,
+        usage: String
+      },
+      baseAccent: {
+        linear: String,
+        usage: String
+      }
+    },
+    complementary: {
+      linear: String,
+      radial: String,
+      usage: String
+    }
+  },
+  combinations: {
+    baseAndAI: [String]
+  },
   paletteType: {
     type: String,
     enum: ['monochromatic', 'analogous', 'complementary', 'triadic', 'tetradic', 'split-complementary', 'custom'],

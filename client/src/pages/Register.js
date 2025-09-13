@@ -80,7 +80,6 @@ const Register = () => {
 
   const handleSocialRegister = (provider) => {
     // Implement social registration logic
-    console.log(`Registering with ${provider}`);
   };
 
   const PasswordStrengthIndicator = ({ password }) => {

@@ -20,7 +20,8 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
     components: Joi.array().items(Joi.string()).optional(),
     colorScheme: Joi.string().allow('').optional(),
     industry: Joi.string().allow('').optional(),
-    targetAudience: Joi.string().allow('').optional()
+    targetAudience: Joi.string().allow('').optional(),
+    debug: Joi.boolean().optional()
   });
 
   const { value, error: validationError } = schema.validate(req.body, { stripUnknown: true });
@@ -29,9 +30,10 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
     return res.status(400).json({ success: false, message: validationError.message });
   }
 
-  const { prompt, layoutType, style, description, components, colorScheme, industry, targetAudience } = value;
+  const { prompt, layoutType, style, description, components, colorScheme, industry, targetAudience, debug } = value;
 
   try {
+
     // Generate layout using AI
     const aiResponse = await generateLayoutWithAI({
       prompt,
@@ -41,8 +43,10 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
       componentsRequired: components,
       colorScheme,
       industry,
-      targetAudience
+      targetAudience,
+      debug
     });
+
 
 
     // Create layout in database
@@ -79,19 +83,24 @@ router.post('/generate', auth, checkUsageLimit('layoutsGenerated'), asyncHandler
     user.usage.layoutsGenerated += 1;
     await user.save();
 
-    res.status(201).json({
+    const responseData = {
       success: true,
       message: 'Layout generated successfully',
       data: {
-        layout
+        layout,
+        promptDebug: aiResponse.promptDebug
       }
-    });
+    };
+
+
+    res.status(201).json(responseData);
   } catch (error) {
     console.error('Layout generation error:', error);
     
     res.status(500).json({
       success: false,
-      message: 'Failed to generate layout. Please try again.'
+      message: 'Failed to generate layout. Please try again.',
+      promptDebug: error?.promptDebug
     });
   }
 }));

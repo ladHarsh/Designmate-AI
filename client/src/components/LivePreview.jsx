@@ -10,47 +10,41 @@ const LivePreview = ({ layout }) => {
     setIsGenerating(true);
     
     try {
-      // Debug logging
-      console.log('🔍 LivePreview: Layout data:', layout);
-      console.log('🔍 LivePreview: HTML Code type:', typeof layout.htmlCode);
-      console.log('🔍 LivePreview: HTML Code length:', layout.htmlCode?.length);
-      console.log('🔍 LivePreview: HTML Code preview:', layout.htmlCode?.substring(0, 200));
       
       // Create a complete HTML page with the layout data
       const htmlContent = generateCompleteHTML(layout);
       
-      console.log('🔍 LivePreview: Generated HTML length:', htmlContent.length);
-      console.log('🔍 LivePreview: Generated HTML preview:', htmlContent.substring(0, 200));
       
       // Open in new window/tab
       const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
       
       if (newWindow) {
-        // Clear any existing content and set proper content type
-        newWindow.document.open('text/html', 'replace');
-        newWindow.document.write(htmlContent);
-        newWindow.document.close();
-        newWindow.focus();
+        try {
+          // Clear any existing content and set proper content type
+          newWindow.document.open('text/html', 'replace');
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+          newWindow.focus();
+          
+          // Add error handling for the new window
+          newWindow.addEventListener('error', (event) => {
+            // Error handling for the new window
+          });
+        } catch (error) {
+          // Error writing to LivePreview window
+        }
         
         // Add a small delay to ensure content is rendered
         setTimeout(() => {
-          console.log('🔍 LivePreview: Checking content after delay');
-          console.log('🔍 LivePreview: Document body exists:', !!newWindow.document.body);
-          console.log('🔍 LivePreview: Body innerHTML length:', newWindow.document.body?.innerHTML?.length);
-          console.log('🔍 LivePreview: Body innerHTML preview:', newWindow.document.body?.innerHTML?.substring(0, 200));
-          
           if (newWindow.document.body && newWindow.document.body.innerHTML.trim() === '') {
-            console.warn('⚠️ LivePreview: Content not rendered, trying alternative method');
             newWindow.location.reload();
           } else {
-            console.log('✅ LivePreview: Content rendered successfully');
             // Force a reflow to ensure styles are applied
             void newWindow.document.body.offsetHeight;
           }
         }, 100);
       }
     } catch (error) {
-      console.error('Error opening live preview:', error);
       alert('Error opening live preview. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -58,6 +52,7 @@ const LivePreview = ({ layout }) => {
   };
 
   const generateCompleteHTML = (layout) => {
+    
     // If backend provided HTML, prefer it. Also handle JSON-wrapped { html, css } strings.
     if (layout.htmlCode && typeof layout.htmlCode === 'string') {
       let raw = layout.htmlCode.trim();
@@ -76,7 +71,6 @@ const LivePreview = ({ layout }) => {
       if (raw.startsWith('{')) {
         try {
           const parsed = JSON.parse(raw);
-          console.log('🔍 LivePreview: Parsed JSON response:', Object.keys(parsed));
           
           if (parsed && typeof parsed.html === 'string') {
             let html = parsed.html;
@@ -84,28 +78,21 @@ const LivePreview = ({ layout }) => {
             html = html.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\'/g, "'");
             const css = typeof parsed.css === 'string' ? parsed.css.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\'/g, "'") : cssFallback;
             
-            console.log('🔍 LivePreview: Extracted HTML length:', html.length);
-            console.log('🔍 LivePreview: Extracted CSS length:', css.length);
-            
             const hasHead = /<head[\s>]/i.test(html);
             const hasStyle = /<style[\s>][\s\S]*?<\/style>/i.test(html);
             const isDoc = /<!DOCTYPE|<html[\s>]/i.test(html);
             
             if (isDoc) {
-              console.log('🔍 LivePreview: Complete HTML document detected');
               if (css && hasHead && !hasStyle) {
-                console.log('🔍 LivePreview: Adding CSS to existing head');
                 return html.replace(/<\/head>/i, `<style>${css}</style></head>`);
               }
               return html;
             }
             
             // Wrap fragment with CSS
-            console.log('🔍 LivePreview: Wrapping HTML fragment with CSS');
             return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">${css ? `<style>${css}</style>` : ''}</head><body>${html}</body></html>`;
           }
         } catch (error) {
-          console.error('🔍 LivePreview: JSON parsing failed:', error);
           // fall through
         }
       }
@@ -113,16 +100,12 @@ const LivePreview = ({ layout }) => {
       // Treat as plain HTML (document or fragment)
       const isDoc = /<!DOCTYPE|<html[\s>]/i.test(raw);
       if (isDoc) {
-        console.log('🔍 LivePreview: Detected complete HTML document');
         // Validate HTML structure
         const hasHead = /<head[\s>]/i.test(raw);
         const hasBody = /<body[\s>]/i.test(raw);
         const hasStyle = /<style[\s>][\s\S]*?<\/style>/i.test(raw);
         
-        console.log('🔍 LivePreview: HTML validation:', { hasHead, hasBody, hasStyle });
-        
         if (!hasHead || !hasBody) {
-          console.warn('⚠️ LivePreview: Incomplete HTML structure, wrapping');
           const cssReset = `
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
@@ -133,7 +116,6 @@ const LivePreview = ({ layout }) => {
         
         // Add CSS reset to existing HTML if it doesn't have proper styling
         if (!hasStyle) {
-          console.log('🔍 LivePreview: Adding CSS reset to existing HTML');
           const cssReset = `
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
@@ -144,8 +126,6 @@ const LivePreview = ({ layout }) => {
         
         return raw;
       }
-      
-      console.log('🔍 LivePreview: Wrapping HTML fragment');
       const cssReset = `
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
@@ -155,6 +135,7 @@ const LivePreview = ({ layout }) => {
     }
 
     // Fallback: Generate HTML from components array
+    
     const colors = layout.colors || {};
     const fonts = layout.fonts || {};
     
@@ -475,7 +456,54 @@ const LivePreview = ({ layout }) => {
             </div>
         </div>
         
-        <!-- JSON Data Section -->
+        <!-- HTML Code Section -->
+        <div class="metadata-section">
+            <h2>Generated HTML Code</h2>
+            <div class="json-viewer">
+                <pre>${layout.htmlCode ? layout.htmlCode.substring(0, 2000) + (layout.htmlCode.length > 2000 ? '\n... (truncated, full length: ' + layout.htmlCode.length + ' characters)' : '') : 'No HTML code available'}</pre>
+            </div>
+        </div>
+        
+        <!-- Layout Details Section -->
+        <div class="metadata-section">
+            <h2>Layout Details</h2>
+            <div class="metadata-grid">
+                <div class="metadata-item">
+                    <div class="metadata-label">HTML Code Length</div>
+                    <div class="metadata-value">${layout.htmlCode ? layout.htmlCode.length.toLocaleString() + ' characters' : 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">CSS Code Length</div>
+                    <div class="metadata-value">${layout.cssCode ? layout.cssCode.length.toLocaleString() + ' characters' : 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Layout Type</div>
+                    <div class="metadata-value">${layout.layoutType || 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Style</div>
+                    <div class="metadata-value">${layout.style || 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Industry</div>
+                    <div class="metadata-value">${layout.industry || 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Color Scheme</div>
+                    <div class="metadata-value">${layout.colorScheme || 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Target Audience</div>
+                    <div class="metadata-value">${layout.targetAudience || 'N/A'}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Components Count</div>
+                    <div class="metadata-value">${layout.components?.length || 0}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Complete API Response Section -->
         <div class="metadata-section">
             <h2>Complete API Response</h2>
             <div class="json-viewer">

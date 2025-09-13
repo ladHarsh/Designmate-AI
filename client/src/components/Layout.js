@@ -8,6 +8,7 @@ import {
   DocumentTextIcon,
   EyeIcon,
   ArrowTrendingUpIcon,
+  SparklesIcon,
   UserIcon,
   Bars3Icon,
   XMarkIcon,
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Color Palette', href: '/color-palette', icon: SwatchIcon },
   { name: 'Font Suggestions', href: '/font-suggestions', icon: DocumentTextIcon },
   { name: 'UX Audit', href: '/ux-audit', icon: EyeIcon },
+  { name: 'Brand Intelligence', href: '/brand-intelligence', icon: SparklesIcon },
   { name: 'Design Trends', href: '/trends', icon: ArrowTrendingUpIcon },
 ];
 

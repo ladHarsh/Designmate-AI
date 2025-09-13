@@ -19,6 +19,7 @@ const fontRoutes = require('./routes/fonts');
 const auditRoutes = require('./routes/audit');
 const trendRoutes = require('./routes/trends');
 const userRoutes = require('./routes/users');
+const brandIntelRoutes = require('./routes/brandIntel');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -74,6 +75,7 @@ app.use('/api/fonts', fontRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/trends', trendRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/brand-intel', brandIntelRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

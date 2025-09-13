@@ -8,6 +8,7 @@ import LayoutGenerator from './pages/LayoutGenerator';
 import ColorPalette from './pages/ColorPalette';
 import FontSuggestions from './pages/FontSuggestions';
 import UXAudit from './pages/UXAudit';
+import BrandIntelligence from './pages/BrandIntelligence';
 import DesignTrends from './pages/DesignTrends';
 import Explore from './pages/Explore';
 import Profile from './pages/Profile';
@@ -73,6 +74,13 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <UXAudit />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/brand-intelligence" element={
+          <ProtectedRoute>
+            <Layout>
+              <BrandIntelligence />
             </Layout>
           </ProtectedRoute>
         } />

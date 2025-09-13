@@ -81,7 +81,6 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'AUTH_START' });
       const response = await authAPI.login(email, password);
       const { user } = response.data.data;
-      console.log('AuthContext user after login:', user);
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: { user }
@@ -101,7 +100,6 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'AUTH_START' });
       const response = await authAPI.register(userData);
       const { user } = response.data.data;
-      console.log('AuthContext user after register:', user);
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: { user }

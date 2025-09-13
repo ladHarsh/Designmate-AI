@@ -1,8 +1,126 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const JSON5 = require('json5');
+const { z } = require('zod');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Fallback via REST in case SDK fetch fails (proxy/cert issues)
+async function generateViaAxios(modelName, promptText) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`;
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: promptText }]
+      }
+    ]
+  };
+  const resp = await axios.post(url, body, { headers: { 'Content-Type': 'application/json' }, timeout: 30000 });
+  const text = resp?.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return { text };
+}
+
+// Generic JSON-call helper for Gemini (v1beta SDK payload shape)
+async function callGeminiJSON(modelName, systemText, userText) {
+  const model = genAI.getGenerativeModel({ model: modelName });
+  const payload = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `${systemText}\n\n${userText}`
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json'
+    }
+  };
+
+  const result = await model.generateContent(payload);
+  const text = result?.response?.text?.() || '';
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // If model returned code fences or stray text, try to clean
+    const cleaned = String(text).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    return JSON.parse(cleaned);
+  }
+}
+
+async function callGeminiJSONWithRetry(primaryModel, systemText, userText, opts = {}) {
+  const { retries = 1, backoffMs = 800, fallbackModel = (process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash') } = opts;
+  let lastError;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await callGeminiJSON(primaryModel, systemText, userText);
+    } catch (err) {
+      lastError = err;
+      const message = String(err?.message || err);
+      const delay = backoffMs * Math.pow(2, attempt);
+      // Retry on transient errors (503/overloaded/timeouts)
+      if (/overloaded|503|unavailable|timeout|rate limit|busy/i.test(message)) {
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      break;
+    }
+  }
+  // Fallback model
+  try {
+    console.warn(`[AI] Falling back to model: ${fallbackModel}`);
+    return await callGeminiJSON(fallbackModel, systemText, userText);
+  } catch (fallbackErr) {
+    throw lastError || fallbackErr;
+  }
+}
+
+// Brand Intelligence — Analysis
+async function analyzeBrand(rawExtract) {
+  const system = 'You are a senior brand strategist and web design system expert. Output must be strict JSON matching the provided schema, with no extra text.';
+  const schema = `{
+  "brandName": "string",
+  "summary": "string",
+  "tone": {"primary": "string", "adjectives": ["string"]},
+  "colors": {"primary": "#RRGGBB", "secondary": "#RRGGBB", "accent": ["#RRGGBB"], "neutrals": ["#RRGGBB"]},
+  "fonts": {
+    "heading": {"name": "string", "fallbacks": ["string"], "source": "google|system|file|unknown"},
+    "body": {"name": "string", "fallbacks": ["string"], "source": "google|system|file|unknown"}
+  },
+  "imagery": {"styles": ["string"], "keywords": ["string"], "heroStyle": "string"},
+  "layoutPreferences": {"density": "airy|balanced|dense", "cornerStyle": "rounded|sharp|mixed", "sectionOrder": ["Hero","Features","Testimonials","CTA","Footer"]},
+  "alternatives": {"colorPalettes": [ {"name": "string", "colors": ["#RRGGBB"]} ], "fontPairs": [ {"heading": "string", "body": "string"} ]}
+}`;
+  const user = `Analyze the following brand raw extract and produce a BrandProfile JSON.\n\nSchema:\n${schema}\n\nInput:\n${JSON.stringify(rawExtract)}\n\nRules:\n- Derive colors from CSS variables and image palettes; normalize to hex.\n- Derive fonts from @font-face, Google Fonts links; else infer by style.\n- Keep adjectives concrete (e.g., "minimalist", "bold").\n- Output valid JSON only.`;
+  const primary = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+  return callGeminiJSONWithRetry(primary, system, user);
+}
+
+// Brand Intelligence — Site Generation
+async function generateSite(brandProfile) {
+  const system = 'You are a principal front-end engineer and brand designer. Produce clean, accessible, production-ready HTML and CSS, strictly following the provided brand profile. Output strict JSON as per schema.';
+  const schema = `{
+  "sections": [
+    {"type": "Hero", "html": "string", "css": "string"},
+    {"type": "Features", "html": "string", "css": "string"},
+    {"type": "Testimonials", "html": "string", "css": "string"},
+    {"type": "CTA", "html": "string", "css": "string"},
+    {"type": "Footer", "html": "string", "css": "string"}
+  ],
+  "globalCss": "string",
+  "assets": {"heroImageUrl": "string|null"}
+}`;
+  const user = `Generate a homepage using the BrandProfile.\n\nSchema:\n${schema}\n\nConstraints:\n- Use these colors and fonts from the profile.\n- Keep CSS scoped under a root class .brand-root.\n- Use semantic HTML5, WCAG AA contrast.\n- Avoid external frameworks in output.\n- If no hero image URL is provided, set assets.heroImageUrl to null and use a gradient background.\n\nInput BrandProfile:\n${JSON.stringify(brandProfile)}\n\nOutput JSON only.`;
+  const primary = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+  const json = await callGeminiJSONWithRetry(primary, system, user);
+  // Flatten for storage convenience
+  const html = (json.sections || []).map(s => s.html).join('\n');
+  const css = [json.globalCss || '', ...(json.sections || []).map(s => s.css || '')].join('\n');
+  return { ...json, html, css };
+}
 
 // Helper function to parse color schemes and handle custom combinations
 const parseColorScheme = (colorScheme, colorSchemes) => {
@@ -207,6 +325,18 @@ RESPONSE RULES:
 9. ${depthFocus ? 'Add IntersectionObserver animations, lazy loading, SEO meta tags, Open Graph' : 'Focus on speed and clean code'}.
 10. All images MUST use reliable, working URLs from Unsplash, Pexels, or similar services with proper dimensions and alt text.
 
+CRITICAL HTML VALIDATION RULES:
+- Every opening tag MUST have a proper closing tag
+- All attributes must be properly quoted with double quotes
+- No malformed style attributes or broken CSS
+- NO IMAGES IN HEAD SECTION - images must only be in <body> section
+- No images embedded within other elements incorrectly
+- All SVG paths must be properly formatted
+- No broken or incomplete HTML structure
+- Ensure all CSS is valid and properly closed
+- <head> section must only contain: meta, title, link, style, script tags
+- <body> section must contain all visible content including images
+
 CODE QUALITY REQUIREMENTS:
 - Write clean, professional, production-ready code
 - Use proper CSS Grid and Flexbox for layouts
@@ -229,26 +359,33 @@ COMPONENTS:
 ${componentDescriptions.map(c => `- ${c}`).join('\n')}
 
 COMPONENT IMAGE REQUIREMENTS:
-- Header: Use a logo or brand image (SVG or PNG)
-- Hero: Use a high-quality background image or hero image (1200x800px minimum)
-- Features: Use relevant icons or images for each feature (400x300px)
-- Pricing: Use checkmark icons or pricing-related images
-- Testimonials: Use professional headshot images (200x200px, circular)
-- Blog: Use featured image for blog posts (600x400px)
-- Newsletter: Use newsletter or email-related images
-- Contact: Use contact form or communication images
-- Footer: Use social media icons or company logo
-- Gallery: Use multiple high-quality images in grid layout
-- FAQ: Use question mark or help icons
-- Sidebar: Use relevant sidebar images or icons
-- Social Media: Use social media platform icons
-- Product Grid: Use product images with consistent dimensions
-- Dashboard Preview: Use dashboard or analytics images
-- CTA Banner: Use compelling call-to-action images
-- Onboarding Steps: Use step-by-step process images
-- Stats: Use charts, graphs, or statistics images
-- Partners: Use partner/client logo images
-- Team: Use professional team member photos (300x300px)
+- Header: Use a logo or brand image (SVG or PNG) - ONLY in header content area
+- Hero: Use a high-quality background image or hero image (1200x800px minimum) - ONLY in hero section
+- Features: Use relevant icons or images for each feature (400x300px) - ONLY in features section
+- Pricing: Use checkmark icons or pricing-related images - ONLY in pricing section
+- Testimonials: Use professional headshot images (200x200px, circular) - ONLY in testimonials section
+- Blog: Use featured image for blog posts (600x400px) - ONLY in blog section
+- Newsletter: Use newsletter or email-related images - ONLY in newsletter section
+- Contact: Use contact form or communication images - ONLY in contact section
+- Footer: NO IMAGES ALLOWED - Footer should only contain text, links, and social media icons (SVG)
+- Gallery: Use multiple high-quality images in grid layout - ONLY in gallery section
+- FAQ: Use question mark or help icons - ONLY in FAQ section
+- Sidebar: Use relevant sidebar images or icons - ONLY in sidebar section
+- Social Media: Use social media platform icons (SVG) - ONLY in appropriate sections
+- Product Grid: Use product images with consistent dimensions - ONLY in product grid section
+- Dashboard Preview: Use dashboard or analytics images - ONLY in dashboard section
+- CTA Banner: Use compelling call-to-action images - ONLY in CTA sections
+- Onboarding Steps: Use step-by-step process images - ONLY in onboarding section
+- Stats: Use charts, graphs, or statistics images - ONLY in stats section
+- Partners: Use partner/client logo images - ONLY in partners section
+- Team: Use professional team member photos (300x300px) - ONLY in team section
+
+CRITICAL IMAGE PLACEMENT RULES:
+- NO IMAGES in <head> section
+- NO IMAGES in <footer> section (use SVG icons only)
+- NO IMAGES in <nav> section (use SVG icons only)
+- Images should ONLY be in content sections like hero, features, gallery, etc.
+- Footer should contain only text links and SVG social media icons
 
 CONTENT:
 - Hero Title: ${industryData.heroTitle}
@@ -357,8 +494,45 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       model
     });
 
-    const geminiModel = genAI.getGenerativeModel({ model });
-    const result = await geminiModel.generateContent(aiPrompt);
+    const shouldDebug = true; // Always log/return prompt to aid debugging
+    let promptDebugPreview;
+    if (shouldDebug) {
+      promptDebugPreview = aiPrompt.length > 4000 ? `${aiPrompt.slice(0, 4000)}... [truncated]` : aiPrompt;
+    }
+
+    const runWithModel = async (chosenModel) => {
+      const geminiModel = genAI.getGenerativeModel({ model: chosenModel });
+      try {
+        return await geminiModel.generateContent(aiPrompt);
+      } catch (sdkErr) {
+        const msg = String(sdkErr?.message || sdkErr);
+        const causeCode = sdkErr?.cause?.code || sdkErr?.code;
+        console.warn('[AI][Layout] SDK call failed:', msg, causeCode ? `(code: ${causeCode})` : '');
+        // Network/proxy/cert issues: try REST fallback via axios
+        if (/fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(msg) ||
+            /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(String(causeCode))) {
+          console.warn('[AI][Layout] Trying REST fallback via axios');
+          const rest = await generateViaAxios(chosenModel, aiPrompt);
+          // Shape a minimal object compatible with downstream usage
+          return { response: { text: () => rest.text } };
+        }
+        throw sdkErr;
+      }
+    };
+
+    let result;
+    try {
+      result = await runWithModel(model);
+    } catch (err) {
+      const message = String(err?.message || err);
+      if (/overloaded|503|unavailable|busy/i.test(message)) {
+        const fallback = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
+        console.warn(`[AI][Layout] Primary model failed (${model}). Falling back to: ${fallback}`);
+        result = await runWithModel(fallback);
+      } else {
+        throw err;
+      }
+    }
     
     if (!result || !result.response) {
       throw new Error('No response received from AI model');
@@ -370,12 +544,16 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       throw new Error('Empty response received from AI model');
     }
     
-    // Clean up the response
+    // Clean up the response more thoroughly
     responseText = responseText
       .replace(/```html\s*/gi, '')
       .replace(/```\s*/g, '')
       .replace(/^```html$/gm, '')
       .replace(/^```$/gm, '')
+      .replace(/^```json$/gm, '')
+      .replace(/^```css$/gm, '')
+      .replace(/^```javascript$/gm, '')
+      .replace(/^```js$/gm, '')
       .trim();
 
     // Check if response is JSON and extract HTML
@@ -399,6 +577,65 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     }
 
 
+    // Fix common HTML issues
+    // CRITICAL: Remove images from head section (invalid HTML)
+    
+    // Find head section and remove img tags
+    const headMatch = responseText.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+    if (headMatch) {
+      const headContent = headMatch[1];
+      const imgInHead = headContent.match(/<img[^>]*>/gi);
+      if (imgInHead) {
+        const cleanedHead = headContent.replace(/<img[^>]*>/gi, '');
+        responseText = responseText.replace(headMatch[0], `<head>${cleanedHead}</head>`);
+      }
+    }
+    
+    responseText = responseText
+      // Fix malformed image tags
+      .replace(/<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(/<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(/<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      // Fix malformed SVG paths
+      .replace(/<path([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<path$1$2>')
+      .replace(/<path([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<path$1$2>')
+      .replace(/<path([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<path$1$2>')
+      // Fix broken style attributes
+      .replace(/style="[^"]*?word-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?overflow-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?hyphens:\s*none[^"]*?"/gi, '')
+      // Fix malformed closing tags
+      .replace(/<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
+      .replace(/<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
+      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, '<$1>')
+      // Fix broken CSS
+      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, '')
+      // Remove empty style attributes
+      .replace(/style="\s*"/gi, '')
+      .replace(/style='\s*'/gi, '')
+      // Fix specific issues from the user's response
+      .replace(/<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(/<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(/<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      // Fix broken SVG elements
+      .replace(/<svg([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
+      .replace(/<svg([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
+      .replace(/<svg([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
+      // Fix broken closing tags with style attributes
+      .replace(/<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
+      .replace(/<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
+      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, '<$1>')
+      // Fix broken CSS selectors
+      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, '')
+      // Remove empty style attributes
+      .replace(/style="\s*"/gi, '')
+      .replace(/style='\s*'/gi, '');
+
+
     // Validate final HTML output and ensure complete structure
     if (!responseText.includes('<!DOCTYPE html>')) {
       responseText = `<!DOCTYPE html>\n${responseText}`;
@@ -415,6 +652,7 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     if (!responseText.includes('<body>')) {
       responseText = responseText.replace('</head>', '</head>\n<body>') + '\n</body>';
     }
+
     
     // Add basic CSS if no styles are present
     if (!responseText.includes('<style>')) {
@@ -491,21 +729,21 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     
     // Fix image issues - ensure all images have proper URLs and attributes
     const workingImageUrls = [
-      'https://images.pexels.com/photos/1441986300917/pexels-photo-1441986300917.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://picsum.photos/1200/800?random=1',
-      'https://loremflickr.com/1200/800',
-      'https://via.placeholder.com/1200x800/0066CC/FFFFFF?text=Product+Image',
-      'https://placekitten.com/1200/800',
-      'https://lorempixel.com/1200/800',
-      'https://images.pexels.com/photos/1441984904996/pexels-photo-1441984904996.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://picsum.photos/1200/800?random=2',
-      'https://loremflickr.com/1200/800/fashion',
-      'https://via.placeholder.com/1200x800/FF6B6B/FFFFFF?text=Style+Image',
-      'https://picsum.photos/1200/800?random=3',
-      'https://loremflickr.com/1200/800/technology',
-      'https://via.placeholder.com/1200x800/4ECDC4/FFFFFF?text=Modern+Design',
-      'https://placekitten.com/1200/800',
-      'https://lorempixel.com/1200/800/business'
+      'https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043472/pexels-photo-1043472.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043470/pexels-photo-1043470.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043469/pexels-photo-1043469.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043468/pexels-photo-1043468.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043467/pexels-photo-1043467.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
+      'https://images.pexels.com/photos/1043466/pexels-photo-1043466.jpeg?w=1200&h=800&fit=crop&auto=format&q=90'
     ];
     
     // Replace placeholder text with working images
@@ -522,6 +760,15 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     // Fix broken image tags and ensure all images have working URLs
     let imageIndex = 0;
     responseText = responseText.replace(/<img([^>]*)>/gi, (match, attributes) => {
+      // Check if this image is in the head section - if so, remove it entirely
+      const beforeMatch = responseText.substring(0, responseText.indexOf(match));
+      const headEnd = beforeMatch.lastIndexOf('</head>');
+      const headStart = beforeMatch.lastIndexOf('<head');
+      
+      if (headStart !== -1 && headEnd !== -1 && headStart < headEnd) {
+        return ''; // Remove the image entirely
+      }
+      
       // Check if image has a proper src or if it's broken
       if (!attributes.includes('src=') || 
           attributes.includes('placeholder') || 
@@ -533,7 +780,7 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
         const altText = attributes.includes('alt=') ? '' : ' alt="Product image"';
         const widthHeight = attributes.includes('width=') ? '' : ' width="1200" height="800"';
         const loading = attributes.includes('loading=') ? '' : ' loading="lazy"';
-        const onerror = attributes.includes('onerror=') ? '' : ' onerror="this.style.display=\'none\'"';
+        const onerror = attributes.includes('onerror=') ? '' : ' onerror="this.style.display=\'none\'; this.style.backgroundColor=\'#f3f4f6\'; this.style.border=\'2px dashed #d1d5db\'; this.innerHTML=\'<div style=\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\">Image not available</div>\';"';
         
         // Clean up the attributes to remove broken src
         const cleanAttributes = attributes
@@ -551,7 +798,7 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     responseText = responseText.replace(/<div[^>]*class="[^"]*placeholder[^"]*"[^>]*>.*?<\/div>/gi, (match) => {
       const workingUrl = workingImageUrls[imageIndex % workingImageUrls.length];
       imageIndex++;
-      return `<img src="${workingUrl}" alt="Product image" width="1200" height="800" loading="lazy" onerror="this.style.display='none'">`;
+      return `<img src="${workingUrl}" alt="Product image" width="1200" height="800" loading="lazy" onerror="this.style.display='none'; this.style.backgroundColor='#f3f4f6'; this.style.border='2px dashed #d1d5db'; this.innerHTML='<div style=\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\">Image not available</div>';">`;
     });
     
     // Final cleanup - replace any remaining text that looks like image descriptions
@@ -565,6 +812,23 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       return match;
     });
     
+    // Fix JavaScript syntax errors and common issues
+    responseText = responseText.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (match, scriptContent) => {
+      // Clean up common JavaScript syntax issues
+      let cleanedScript = scriptContent
+        .replace(/console\.log\([^)]*\);/gi, '') // Remove console.log statements
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+        .replace(/\/\/.*$/gm, '') // Remove line comments
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      // Only return the script if it has valid content
+      if (cleanedScript && cleanedScript.length > 10) {
+        return `<script>${cleanedScript}</script>`;
+      }
+      return ''; // Remove empty or invalid scripts
+    });
+
     // Fix common layout and typography issues
     responseText = responseText.replace(/style="[^"]*"/gi, (match) => {
       // Add word-wrap and overflow-wrap to existing styles
@@ -588,6 +852,51 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       responseText = `${responseText}\n</html>`;
     }
 
+    // FINAL CLEANUP: Remove any images that might have been added to inappropriate sections
+    
+    // Remove images from head section
+    const finalHeadMatch = responseText.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+    if (finalHeadMatch) {
+      const finalHeadContent = finalHeadMatch[1];
+      const finalImgInHead = finalHeadContent.match(/<img[^>]*>/gi);
+      if (finalImgInHead) {
+        const finalCleanedHead = finalHeadContent.replace(/<img[^>]*>/gi, '');
+        responseText = responseText.replace(finalHeadMatch[0], `<head>${finalCleanedHead}</head>`);
+      }
+    }
+    
+    // Remove images from footer section and replace with appropriate SVG icons
+    const footerMatch = responseText.match(/<footer[^>]*>([\s\S]*?)<\/footer>/gi);
+    if (footerMatch) {
+      footerMatch.forEach((footer, index) => {
+        const imgInFooter = footer.match(/<img[^>]*>/gi);
+        if (imgInFooter) {
+          // Replace images with appropriate SVG social media icons
+          let cleanedFooter = footer.replace(/<img[^>]*>/gi, (imgTag) => {
+            // Check if it's a social media icon by looking at alt text or src
+            if (imgTag.includes('social') || imgTag.includes('instagram') || imgTag.includes('twitter') || imgTag.includes('facebook') || imgTag.includes('youtube')) {
+              return '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8"/></svg>';
+            }
+            return ''; // Remove other images
+          });
+          
+          responseText = responseText.replace(footer, cleanedFooter);
+        }
+      });
+    }
+    
+    // Remove images from navigation sections
+    const navMatch = responseText.match(/<nav[^>]*>([\s\S]*?)<\/nav>/gi);
+    if (navMatch) {
+      navMatch.forEach((nav, index) => {
+        const imgInNav = nav.match(/<img[^>]*>/gi);
+        if (imgInNav) {
+          const cleanedNav = nav.replace(/<img[^>]*>/gi, '');
+          responseText = responseText.replace(nav, cleanedNav);
+        }
+      });
+    }
+
     const finalResponse = {
       success: true,
       htmlCode: responseText,
@@ -601,11 +910,22 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       description: `AI-generated ${layoutType} layout with ${style} design for ${industry} industry`
     };
 
+    if (shouldDebug && promptDebugPreview) {
+      finalResponse.promptDebug = promptDebugPreview;
+    }
+
 
     return finalResponse;
     
   } catch (error) {
     console.error('❌ Layout generation error:', error);
+    // Attach prompt for upstream handlers to return to client
+    try {
+      if (!error.promptDebug && typeof aiPrompt === 'string') {
+        const preview = aiPrompt.length > 4000 ? `${aiPrompt.slice(0, 4000)}... [truncated]` : aiPrompt;
+        error.promptDebug = preview;
+      }
+    } catch (_) {}
     throw error;
   }
 };
@@ -627,14 +947,19 @@ const generateHTMLCSS = async (layoutData, options) => {
   return await generateLayoutWithAI(options);
 };
 
-// Enhanced Color Palette Generation
+// Advanced Color Palette Generator with gradients/semantic colors
 const buildColorPalettePrompt = (options = {}) => {
   const {
     mood = 'modern',
     industry = 'technology',
     paletteType = 'custom',
     prompt = '',
-    model = 'gemini-2.5-pro'
+    model = 'gemini-2.5-pro',
+    includeGradients = true,
+    includeTextureColors = false,
+    semanticColors = true,
+    colorHarmony = 'balanced',
+    accessibilityLevel = 'AA'
   } = options;
 
   const depthFocus = model.includes('pro');
@@ -647,7 +972,11 @@ const buildColorPalettePrompt = (options = {}) => {
     playful: 'Bright, cheerful colors with fun combinations and gradients',
     professional: 'Conservative, trustworthy colors suitable for business',
     creative: 'Experimental, artistic colors with unique combinations',
-    vintage: 'Retro-inspired colors with muted tones and nostalgic feel'
+    vintage: 'Retro-inspired colors with muted tones and nostalgic feel',
+    futuristic: 'Neon accents, dark backgrounds, cyberpunk-inspired colors',
+    organic: 'Earth tones, natural colors inspired by nature',
+    luxury: 'Rich, premium colors with metallic accents',
+    energetic: 'High-energy colors that inspire action and movement'
   };
 
   const industryContext = {
@@ -660,7 +989,11 @@ const buildColorPalettePrompt = (options = {}) => {
     food: 'Restaurants, food delivery, culinary, hospitality',
     travel: 'Tourism, hospitality, travel booking, adventure',
     fashion: 'Clothing, beauty, lifestyle, luxury brands',
-    entertainment: 'Media, gaming, music, entertainment content'
+    entertainment: 'Media, gaming, music, entertainment content',
+    fitness: 'Gyms, sports, wellness, health tracking apps',
+    cryptocurrency: 'Blockchain, digital currency, fintech, trading',
+    sustainability: 'Green energy, eco-friendly, environmental',
+    automotive: 'Cars, transportation, mobility, racing'
   };
 
   const paletteTypes = {
@@ -669,96 +1002,210 @@ const buildColorPalettePrompt = (options = {}) => {
     complementary: 'Opposite colors on the color wheel',
     triadic: 'Three evenly spaced colors on the color wheel',
     tetradic: 'Four colors forming a rectangle on the color wheel',
-    custom: 'Custom color combination based on specific requirements'
+    splitComplementary: 'Base color plus two colors adjacent to its complement',
+    square: 'Four colors evenly spaced around the color wheel',
+    custom: 'Custom color combination based on specific requirements',
+    gradient: 'Colors designed specifically for smooth gradient transitions'
+  };
+
+  const colorHarmonyTypes = {
+    balanced: 'Equal visual weight across all colors',
+    dominant: 'One primary color dominates with supporting colors',
+    contrasting: 'High contrast between light and dark elements',
+    subtle: 'Low contrast with gentle color transitions',
+    dynamic: 'Varying intensities creating visual rhythm'
   };
 
   const moodGuide = moodGuidelines[mood] || moodGuidelines.modern;
   const industryDesc = industryContext[industry] || industryContext.technology;
   const paletteDesc = paletteTypes[paletteType] || paletteTypes.custom;
+  const harmonyDesc = colorHarmonyTypes[colorHarmony] || colorHarmonyTypes.balanced;
+
+  const gradientFeatures = includeGradients ? `
+GRADIENT REQUIREMENTS:
+- Create 3-5 gradient combinations using palette colors
+- Include linear, radial, and conic gradient variations
+- Provide CSS gradient syntax ready for implementation
+- Ensure smooth color transitions without muddy middle tones
+- Include gradient overlays for text readability` : '';
+
+  const textureFeatures = includeTextureColors ? `
+TEXTURE COLOR FEATURES:
+- Provide shadow and highlight variations for depth
+- Include noise/texture overlay colors
+- Create color variations for different material surfaces
+- Provide glass morphism color variations` : '';
+
+  const semanticFeatures = semanticColors ? `
+SEMANTIC COLORS:
+- Success, warning, error, and info state colors
+- Interactive state colors (hover, active, disabled)
+- Loading and progress indicator colors
+- Notification and badge colors` : '';
 
   const aiPrompt = `
-You are a world-class color theory expert and UI/UX designer.
-Generate a ${mood} color palette for ${industryDesc} applications.
+You are a world-class color theory expert, UI/UX designer, and digital artist specializing in advanced color systems.
+Generate a ${mood} color palette for ${industryDesc} applications with modern web design features.
 
 RESPONSE RULES:
 1. Return ONLY valid JSON. No markdown, explanations, or code blocks.
-2. Include exactly 5-8 colors with proper naming and relationships.
-3. Ensure accessibility compliance with WCAG AA standards.
-4. ${depthFocus ? 'Include detailed color psychology and usage guidelines' : 'Keep it simple and practical'}.
+2. Include exactly 8-12 colors with proper naming and relationships.
+3. Ensure accessibility compliance with WCAG ${accessibilityLevel} standards.
+4. ${depthFocus ? 'Include detailed color psychology, usage guidelines, and design system recommendations' : 'Keep it practical with essential usage notes'}.
+5. Include advanced features: gradients, semantic colors, and interactive states.
 
 PALETTE REQUIREMENTS:
 - Mood: ${moodGuide}
 - Industry: ${industryDesc}
 - Type: ${paletteDesc}
-- Colors: 5-8 colors with primary, secondary, accent, neutral, and background variations
-- Accessibility: Ensure sufficient contrast ratios (4.5:1 for normal text, 3:1 for large text)
+- Harmony: ${harmonyDesc}
+- Colors: 8-12 colors including primary, secondary, accent, neutral, semantic, and state variations
+- Accessibility: Ensure sufficient contrast ratios (4.5:1 for normal text, 3:1 for large text, 7:1 for AAA)
+
+${gradientFeatures}
+${textureFeatures}
+${semanticFeatures}
 
 ${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ''}
 
 JSON STRUCTURE:
 {
   "name": "Descriptive palette name",
-  "description": "Brief description of the palette",
+  "description": "Brief description focusing on unique features",
   "mood": "${mood}",
   "industry": "${industry}",
   "paletteType": "${paletteType}",
+  "colorHarmony": "${colorHarmony}",
   "colors": {
-    "primary": {"hex": "#000000", "name": "Primary", "usage": "Main brand color"},
-    "secondary": {"hex": "#000000", "name": "Secondary", "usage": "Supporting color"},
-    "accent": {"hex": "#000000", "name": "Accent", "usage": "Call-to-action color"},
-    "neutral": {"hex": "#000000", "name": "Neutral", "usage": "Text and borders"},
-    "background": {"hex": "#000000", "name": "Background", "usage": "Page background"},
-    "surface": {"hex": "#000000", "name": "Surface", "usage": "Card backgrounds"},
-    "text": {"hex": "#000000", "name": "Text", "usage": "Primary text color"},
-    "textSecondary": {"hex": "#000000", "name": "Text Secondary", "usage": "Secondary text"}
+    "primary": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Primary", "usage": "Main brand color"},
+    "primaryDark": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Primary Dark", "usage": "Hover/active state"},
+    "primaryLight": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Primary Light", "usage": "Subtle highlights"},
+    "secondary": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Secondary", "usage": "Supporting elements"},
+    "accent": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Accent", "usage": "Call-to-action elements"},
+    "neutral": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Neutral", "usage": "Text and borders"},
+    "neutralLight": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Neutral Light", "usage": "Subtle backgrounds"},
+    "background": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Background", "usage": "Page background"},
+    "surface": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Surface", "usage": "Card/component backgrounds"},
+    "text": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Text", "usage": "Primary text"},
+    "textSecondary": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Text Secondary", "usage": "Secondary text"},
+    "success": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Success", "usage": "Success states"},
+    "warning": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Warning", "usage": "Warning states"},
+    "error": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Error", "usage": "Error states"},
+    "info": {"hex": "#000000", "rgb": "rgb(0,0,0)", "hsl": "hsl(0,0%,0%)", "name": "Info", "usage": "Information states"}
+  },
+  "gradients": {
+    "primary": {
+      "linear": "linear-gradient(135deg, #hex1 0%, #hex2 100%)",
+      "radial": "radial-gradient(circle, #hex1 0%, #hex2 100%)",
+      "usage": "Hero sections, buttons, cards"
+    },
+    "accent": {
+      "linear": "linear-gradient(45deg, #hex1 0%, #hex2 100%)",
+      "radial": "radial-gradient(ellipse, #hex1 0%, #hex2 100%)",
+      "usage": "CTAs, highlights, special elements"
+    },
+    "neutral": {
+      "linear": "linear-gradient(180deg, #hex1 0%, #hex2 100%)",
+      "usage": "Backgrounds, overlays, subtle effects"
+    },
+    "glass": {
+      "backdrop": "rgba(255,255,255,0.1)",
+      "border": "rgba(255,255,255,0.2)",
+      "usage": "Glass morphism effects"
+    }
+  },
+  "interactiveStates": {
+    "hover": {"primary": "#000000", "secondary": "#000000", "accent": "#000000"},
+    "active": {"primary": "#000000", "secondary": "#000000", "accent": "#000000"},
+    "focus": {"primary": "#000000", "secondary": "#000000", "accent": "#000000"},
+    "disabled": {"primary": "#000000", "secondary": "#000000", "accent": "#000000"}
+  },
+  "shadows": {
+    "light": "rgba(0,0,0,0.1)",
+    "medium": "rgba(0,0,0,0.15)",
+    "heavy": "rgba(0,0,0,0.25)",
+    "colored": "rgba(primary_rgb,0.2)"
   },
   "accessibility": {
-    "contrastRatio": 4.5,
+    "contrastRatio": ${accessibilityLevel === 'AAA' ? 7.0 : 4.5},
     "wcagCompliant": true,
-    "notes": "Accessibility notes"
+    "level": "${accessibilityLevel}",
+    "notes": "All color combinations tested for accessibility",
+    "colorBlindSafe": true
+  },
+  "designSystem": {
+    "spacing": "Use consistent spacing with color relationships",
+    "typography": "Colors optimized for text hierarchy",
+    "components": "Color variations for buttons, cards, forms, navigation",
+    "darkMode": "Automatically generate dark mode variations"
+  },
+  "psychology": {
+    "primaryEmotion": "Emotion evoked by primary color",
+    "brandPersonality": "Personality traits conveyed",
+    "targetAudience": "Ideal audience for this palette",
+    "culturalConsiderations": "Cultural color meanings"
   },
   "usage": {
-    "primary": "Use for main CTAs, links, and brand elements",
-    "secondary": "Use for supporting elements and highlights",
-    "accent": "Use sparingly for emphasis and special elements"
+    "primary": "Main brand elements, primary CTAs, logo colors",
+    "secondary": "Secondary buttons, supporting graphics, icons",
+    "accent": "Highlights, notifications, special promotions",
+    "gradients": "Hero sections, card backgrounds, loading states",
+    "semantic": "Status indicators, form validation, alerts"
   },
-  "tags": ["${mood}", "${industry}", "accessible", "modern"]
+  "cssVariables": {
+    "--color-primary": "var(--primary-hex)",
+    "--color-secondary": "var(--secondary-hex)",
+    "--gradient-primary": "var(--gradient-primary-linear)",
+    "--shadow-colored": "var(--shadow-colored)"
+  },
+  "exportFormats": {
+    "sketch": "Ready for Sketch import",
+    "figma": "Figma color styles format",
+    "adobe": "Adobe Creative Suite compatible",
+    "css": "CSS custom properties included"
+  },
+  "tags": ["${mood}", "${industry}", "accessible", "gradient-ready", "interactive", "modern", "semantic"]
 }`;
 
   return aiPrompt;
 };
 
+// Theme variations prompt helper
+const buildThemeVariations = (basePalette, options = {}) => {
+  const { includeDark = true, includeHighContrast = false, includeSepia = false } = options;
+  return `
+Create theme variations for the base palette:
+${includeDark ? '- Dark mode: Invert luminosity while maintaining color relationships' : ''}
+${includeHighContrast ? '- High contrast: Maximum accessibility with bold color differences' : ''}
+${includeSepia ? '- Sepia mode: Warm, vintage-inspired monochromatic variation' : ''}
+
+Each theme should maintain:
+1. Brand recognition through color relationships
+2. Accessibility standards
+3. Gradient compatibility
+4. Semantic color meanings
+`;
+};
+
+const { ColorPaletteGenerator } = require('./paletteService');
+
 const generateColorPaletteWithAI = async ({ prompt, mood, industry, paletteType, model = 'gemini-2.5-pro' }) => {
   try {
-    const aiPrompt = buildColorPalettePrompt({
+    const generator = new ColorPaletteGenerator(genAI);
+    const normalizedPalette = await generator.generate({
+      prompt: `${prompt}`,
       mood,
-      industry,
-      paletteType,
-      prompt,
+      industry: industry || 'technology',
+      paletteType: paletteType || 'custom',
       model
     });
-
-    const geminiModel = genAI.getGenerativeModel({ model });
-    const result = await geminiModel.generateContent(aiPrompt);
-    let responseText = result.response.text();
-    
-    responseText = responseText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-    
-    try {
-      const palette = JSON.parse(responseText);
-      
-      // Normalize and validate the palette data
-      const normalizedPalette = normalizeColorPalette(palette, mood, industry);
-      return normalizedPalette;
-    } catch (parseError) {
-      return generateDefaultColorPalette(mood, industry);
-    }
+    return normalizedPalette;
   } catch (error) {
     return generateDefaultColorPalette(mood, industry);
   }
 };
 
-// Helper function to normalize color palette data
+// Helper function to normalize color palette data to backend schema
 const normalizeColorPalette = (palette, mood, industry) => {
   // Ensure required fields exist
   const normalized = {
@@ -767,7 +1214,7 @@ const normalizeColorPalette = (palette, mood, industry) => {
     mood: palette.mood || mood,
     industry: palette.industry || industry,
     paletteType: palette.paletteType || 'custom',
-    colors: palette.colors || {},
+    colors: {},
     accessibility: {
       contrastRatio: typeof palette.accessibility?.contrastRatio === 'number' 
         ? palette.accessibility.contrastRatio 
@@ -783,17 +1230,95 @@ const normalizeColorPalette = (palette, mood, industry) => {
     tags: Array.isArray(palette.tags) ? palette.tags : [mood, industry, 'accessible', 'modern']
   };
 
-  // Validate and normalize colors
-  const requiredColors = ['primary', 'secondary', 'accent', 'neutral', 'background', 'surface', 'text', 'textSecondary'];
-  requiredColors.forEach(colorKey => {
-    if (!normalized.colors[colorKey] || !normalized.colors[colorKey].hex) {
-      normalized.colors[colorKey] = {
-        hex: '#000000',
-        name: colorKey.charAt(0).toUpperCase() + colorKey.slice(1),
-        usage: `Usage for ${colorKey} color`
+  const src = palette.colors || {};
+  const pickHex = (obj) => {
+    if (!obj) return undefined;
+    if (typeof obj === 'string') return obj;
+    if (obj.hex) return obj.hex;
+    return undefined;
+  };
+
+  // Map to backend schema keys only
+  const primaryHex = pickHex(src.primary) || '#3B82F6';
+  const secondaryHex = pickHex(src.secondary) || '#64748B';
+  const accentHex = pickHex(src.accent) || '#F59E0B';
+  const backgroundHex = pickHex(src.background) || '#FFFFFF';
+  const textHex = pickHex(src.text || src.textPrimary) || '#1F2937';
+
+  normalized.colors.primary = { hex: primaryHex };
+  normalized.colors.secondary = { hex: secondaryHex };
+  normalized.colors.accent = { hex: accentHex };
+  normalized.colors.background = { hex: backgroundHex };
+  normalized.colors.text = { hex: textHex };
+  // Neutrals array (optional)
+  const neutrals = [];
+  if (Array.isArray(src.neutrals)) {
+    src.neutrals.forEach((n) => {
+      const hx = pickHex(n);
+      if (hx) neutrals.push({ hex: hx, name: n.name });
+    });
+  } else if (Array.isArray(src.neutral)) {
+    src.neutral.forEach((n) => {
+      const hx = pickHex(n);
+      if (hx) neutrals.push({ hex: hx, name: n.name });
+    });
+  }
+  if (neutrals.length) normalized.colors.neutral = neutrals;
+
+  // Map gradients if provided
+  if (palette.gradients && typeof palette.gradients === 'object') {
+    normalized.gradients = {};
+    if (palette.gradients.primary) {
+      normalized.gradients.primary = {
+        linear: palette.gradients.primary.linear,
+        radial: palette.gradients.primary.radial,
+        usage: palette.gradients.primary.usage
       };
     }
-  });
+    if (palette.gradients.accent) {
+      normalized.gradients.accent = {
+        linear: palette.gradients.accent.linear,
+        radial: palette.gradients.accent.radial,
+        usage: palette.gradients.accent.usage
+      };
+    }
+    if (palette.gradients.neutral) {
+      normalized.gradients.neutral = {
+        linear: palette.gradients.neutral.linear,
+        usage: palette.gradients.neutral.usage
+      };
+    }
+    if (palette.gradients.glass) {
+      normalized.gradients.glass = {
+        backdrop: palette.gradients.glass.backdrop,
+        border: palette.gradients.glass.border,
+        usage: palette.gradients.glass.usage
+      };
+    }
+  }
+
+  // Fallback gradients if missing
+  if (!normalized.gradients) {
+    const p = normalized.colors.primary?.hex || '#3B82F6';
+    const a = normalized.colors.accent?.hex || '#F59E0B';
+    const n = (normalized.colors.neutral?.[0]?.hex) || '#E5E7EB';
+    normalized.gradients = {
+      primary: {
+        linear: `linear-gradient(135deg, ${p} 0%, ${a} 100%)`,
+        radial: `radial-gradient(circle, ${p} 0%, ${a} 100%)`,
+        usage: 'Hero sections, buttons, cards'
+      },
+      accent: {
+        linear: `linear-gradient(45deg, ${a} 0%, ${p} 100%)`,
+        radial: `radial-gradient(ellipse, ${a} 0%, ${p} 100%)`,
+        usage: 'CTAs, highlights, special elements'
+      },
+      neutral: {
+        linear: `linear-gradient(180deg, ${n} 0%, #ffffff 100%)`,
+        usage: 'Backgrounds, overlays, subtle effects'
+      }
+    };
+  }
 
   return normalized;
 };
@@ -1248,5 +1773,7 @@ module.exports = {
   buildFontSuggestionsPrompt,
   generateFontSuggestionsWithAI,
   buildUXAuditPrompt,
-  performUXAuditWithAI
+  performUXAuditWithAI,
+  analyzeBrand,
+  generateSite
 };
