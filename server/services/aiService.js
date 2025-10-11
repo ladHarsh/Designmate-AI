@@ -1,23 +1,28 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const axios = require('axios');
-const JSON5 = require('json5');
-const { z } = require('zod');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require("axios");
+const JSON5 = require("json5");
+const { z } = require("zod");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Fallback via REST in case SDK fetch fails (proxy/cert issues)
 async function generateViaAxios(modelName, promptText) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    modelName
+  )}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`;
   const body = {
     contents: [
       {
-        role: 'user',
-        parts: [{ text: promptText }]
-      }
-    ]
+        role: "user",
+        parts: [{ text: promptText }],
+      },
+    ],
   };
-  const resp = await axios.post(url, body, { headers: { 'Content-Type': 'application/json' }, timeout: 30000 });
-  const text = resp?.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const resp = await axios.post(url, body, {
+    headers: { "Content-Type": "application/json" },
+    timeout: 30000,
+  });
+  const text = resp?.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   return { text };
 }
 
@@ -27,32 +32,44 @@ async function callGeminiJSON(modelName, systemText, userText) {
   const payload = {
     contents: [
       {
-        role: 'user',
+        role: "user",
         parts: [
           {
-            text: `${systemText}\n\n${userText}`
-          }
-        ]
-      }
+            text: `${systemText}\n\n${userText}`,
+          },
+        ],
+      },
     ],
     generationConfig: {
-      responseMimeType: 'application/json'
-    }
+      responseMimeType: "application/json",
+    },
   };
 
   const result = await model.generateContent(payload);
-  const text = result?.response?.text?.() || '';
+  const text = result?.response?.text?.() || "";
   try {
     return JSON.parse(text);
   } catch (e) {
     // If model returned code fences or stray text, try to clean
-    const cleaned = String(text).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    const cleaned = String(text)
+      .replace(/^```json\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
     return JSON.parse(cleaned);
   }
 }
 
-async function callGeminiJSONWithRetry(primaryModel, systemText, userText, opts = {}) {
-  const { retries = 1, backoffMs = 800, fallbackModel = (process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash') } = opts;
+async function callGeminiJSONWithRetry(
+  primaryModel,
+  systemText,
+  userText,
+  opts = {}
+) {
+  const {
+    retries = 1,
+    backoffMs = 800,
+    fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash",
+  } = opts;
   let lastError;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -63,7 +80,7 @@ async function callGeminiJSONWithRetry(primaryModel, systemText, userText, opts 
       const delay = backoffMs * Math.pow(2, attempt);
       // Retry on transient errors (503/overloaded/timeouts)
       if (/overloaded|503|unavailable|timeout|rate limit|busy/i.test(message)) {
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
         continue;
       }
       break;
@@ -80,7 +97,8 @@ async function callGeminiJSONWithRetry(primaryModel, systemText, userText, opts 
 
 // Brand Intelligence — Analysis
 async function analyzeBrand(rawExtract) {
-  const system = 'You are a senior brand strategist and web design system expert. Output must be strict JSON matching the provided schema, with no extra text.';
+  const system =
+    "You are a senior brand strategist and web design system expert. Output must be strict JSON matching the provided schema, with no extra text.";
   const schema = `{
   "brandName": "string",
   "summary": "string",
@@ -94,14 +112,17 @@ async function analyzeBrand(rawExtract) {
   "layoutPreferences": {"density": "airy|balanced|dense", "cornerStyle": "rounded|sharp|mixed", "sectionOrder": ["Hero","Features","Testimonials","CTA","Footer"]},
   "alternatives": {"colorPalettes": [ {"name": "string", "colors": ["#RRGGBB"]} ], "fontPairs": [ {"heading": "string", "body": "string"} ]}
 }`;
-  const user = `Analyze the following brand raw extract and produce a BrandProfile JSON.\n\nSchema:\n${schema}\n\nInput:\n${JSON.stringify(rawExtract)}\n\nRules:\n- Derive colors from CSS variables and image palettes; normalize to hex.\n- Derive fonts from @font-face, Google Fonts links; else infer by style.\n- Keep adjectives concrete (e.g., "minimalist", "bold").\n- Output valid JSON only.`;
-  const primary = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+  const user = `Analyze the following brand raw extract and produce a BrandProfile JSON.\n\nSchema:\n${schema}\n\nInput:\n${JSON.stringify(
+    rawExtract
+  )}\n\nRules:\n- Derive colors from CSS variables and image palettes; normalize to hex.\n- Derive fonts from @font-face, Google Fonts links; else infer by style.\n- Keep adjectives concrete (e.g., "minimalist", "bold").\n- Output valid JSON only.`;
+  const primary = process.env.GEMINI_MODEL || "gemini-2.5-pro";
   return callGeminiJSONWithRetry(primary, system, user);
 }
 
 // Brand Intelligence — Site Generation
 async function generateSite(brandProfile) {
-  const system = 'You are a principal front-end engineer and brand designer. Produce clean, accessible, production-ready HTML and CSS, strictly following the provided brand profile. Output strict JSON as per schema.';
+  const system =
+    "You are a principal front-end engineer and brand designer. Produce clean, accessible, production-ready HTML and CSS, strictly following the provided brand profile. Output strict JSON as per schema.";
   const schema = `{
   "sections": [
     {"type": "Hero", "html": "string", "css": "string"},
@@ -113,42 +134,50 @@ async function generateSite(brandProfile) {
   "globalCss": "string",
   "assets": {"heroImageUrl": "string|null"}
 }`;
-  const user = `Generate a homepage using the BrandProfile.\n\nSchema:\n${schema}\n\nConstraints:\n- Use these colors and fonts from the profile.\n- Keep CSS scoped under a root class .brand-root.\n- Use semantic HTML5, WCAG AA contrast.\n- Avoid external frameworks in output.\n- If no hero image URL is provided, set assets.heroImageUrl to null and use a gradient background.\n\nInput BrandProfile:\n${JSON.stringify(brandProfile)}\n\nOutput JSON only.`;
-  const primary = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+  const user = `Generate a homepage using the BrandProfile.\n\nSchema:\n${schema}\n\nConstraints:\n- Use these colors and fonts from the profile.\n- Keep CSS scoped under a root class .brand-root.\n- Use semantic HTML5, WCAG AA contrast.\n- Avoid external frameworks in output.\n- If no hero image URL is provided, set assets.heroImageUrl to null and use a gradient background.\n\nInput BrandProfile:\n${JSON.stringify(
+    brandProfile
+  )}\n\nOutput JSON only.`;
+  const primary = process.env.GEMINI_MODEL || "gemini-2.5-pro";
   const json = await callGeminiJSONWithRetry(primary, system, user);
   // Flatten for storage convenience
-  const html = (json.sections || []).map(s => s.html).join('\n');
-  const css = [json.globalCss || '', ...(json.sections || []).map(s => s.css || '')].join('\n');
+  const html = (json.sections || []).map((s) => s.html).join("\n");
+  const css = [
+    json.globalCss || "",
+    ...(json.sections || []).map((s) => s.css || ""),
+  ].join("\n");
   return { ...json, html, css };
 }
 
 // Helper function to parse color schemes and handle custom combinations
 const parseColorScheme = (colorScheme, colorSchemes) => {
-  if (!colorScheme || typeof colorScheme !== 'string') {
+  if (!colorScheme || typeof colorScheme !== "string") {
     return colorSchemes.blue;
   }
 
   const scheme = colorScheme.toLowerCase().trim();
-  
+
   // Direct match
   if (colorSchemes[scheme]) {
     return colorSchemes[scheme];
   }
 
   // Handle combinations like "purple and pink", "blue and green", etc.
-  if (scheme.includes('and') || scheme.includes('&') || scheme.includes(',')) {
-    const colors = scheme.split(/[\s,&]+/).map(c => c.trim()).filter(c => c);
-    
+  if (scheme.includes("and") || scheme.includes("&") || scheme.includes(",")) {
+    const colors = scheme
+      .split(/[\s,&]+/)
+      .map((c) => c.trim())
+      .filter((c) => c);
+
     if (colors.length >= 2) {
       const primaryColor = colors[0];
       const secondaryColor = colors[1];
-      
+
       // Create a custom combination
       if (colorSchemes[primaryColor] && colorSchemes[secondaryColor]) {
         return {
           primary: colorSchemes[primaryColor].primary,
           secondary: colorSchemes[secondaryColor].primary,
-          accent: colorSchemes[primaryColor].accent
+          accent: colorSchemes[primaryColor].accent,
         };
       }
     }
@@ -163,14 +192,14 @@ const parseColorScheme = (colorScheme, colorSchemes) => {
 
   // Handle specific color names
   const colorMap = {
-    'purple': colorSchemes.purple,
-    'pink': colorSchemes.pink,
-    'blue': colorSchemes.blue,
-    'green': colorSchemes.green,
-    'red': colorSchemes.red,
-    'orange': colorSchemes.orange,
-    'indigo': colorSchemes.indigo,
-    'teal': colorSchemes.teal
+    purple: colorSchemes.purple,
+    pink: colorSchemes.pink,
+    blue: colorSchemes.blue,
+    green: colorSchemes.green,
+    red: colorSchemes.red,
+    orange: colorSchemes.orange,
+    indigo: colorSchemes.indigo,
+    teal: colorSchemes.teal,
   };
 
   for (const [colorName, colorValue] of Object.entries(colorMap)) {
@@ -186,118 +215,170 @@ const parseColorScheme = (colorScheme, colorSchemes) => {
 // Universal AI-powered layout generation logic
 const buildPrompt = (options = {}) => {
   const {
-    layoutType = 'landing-page',
-    style = 'modern',
-    industry = 'technology',
+    layoutType = "landing-page",
+    style = "modern",
+    industry = "technology",
     components = [],
-    colorScheme = 'blue',
-    targetAudience = 'general',
-    customBrief = '',
-    model = 'gemini-2.5-pro' // 👈 Pass 'gemini-2.5-pro' or 'gemini-2.5-flash'
+    colorScheme = "blue",
+    targetAudience = "general",
+    customBrief = "",
+    model = "gemini-2.5-pro", // 👈 Pass 'gemini-2.5-pro' or 'gemini-2.5-flash'
   } = options;
 
   // Model-specific tuning
-  const depthFocus = model.includes('pro');
+  const depthFocus = model.includes("pro");
 
   const componentMap = {
-    header: 'Sticky header with logo, navigation, and CTA button',
-    hero: 'Full-width hero section with CTA and background image',
-    features: 'Feature grid with icons/images and bold headlines',
-    pricing: 'Pricing plans with comparison tables',
-    testimonials: 'Customer testimonials with names and company logos',
-    blog: 'Blog/news preview grid',
-    newsletter: 'Newsletter signup with validation',
-    contact: 'Contact form with company info',
-    footer: 'Footer with navigation, company info, social media links',
-    gallery: 'Grid gallery with lightbox functionality',
-    faq: 'FAQ accordion with Q&A',
-    sidebar: 'Sidebar with quick links or extra content',
-    socialMedia: 'Social media icons with hover effects',
-    productGrid: 'Product/service cards with pricing and ratings',
-    dashboardPreview: 'Dashboard preview cards/tables (for apps)',
-    ctaBanner: 'Prominent call-to-action banner',
-    onboardingSteps: 'Step-by-step onboarding cards',
-    stats: 'Animated KPI counters',
-    partners: 'Partner/client logo showcase',
-    team: 'Team member grid with bios'
+    header: "Sticky header with logo, navigation, and CTA button",
+    hero: "Full-width hero section with CTA and background image",
+    features: "Feature grid with icons/images and bold headlines",
+    pricing: "Pricing plans with comparison tables",
+    testimonials: "Customer testimonials with names and company logos",
+    blog: "Blog/news preview grid",
+    newsletter: "Newsletter signup with validation",
+    contact: "Contact form with company info",
+    footer: "Footer with navigation, company info, social media links",
+    gallery: "Grid gallery with lightbox functionality",
+    faq: "FAQ accordion with Q&A",
+    sidebar: "Sidebar with quick links or extra content",
+    socialMedia: "Social media icons with hover effects",
+    productGrid: "Product/service cards with pricing and ratings",
+    dashboardPreview: "Dashboard preview cards/tables (for apps)",
+    ctaBanner: "Prominent call-to-action banner",
+    onboardingSteps: "Step-by-step onboarding cards",
+    stats: "Animated KPI counters",
+    partners: "Partner/client logo showcase",
+    team: "Team member grid with bios",
   };
 
   const styleGuidelines = {
-    minimal: 'Clean, white space, simple typography, subtle shadows',
-    modern: 'Bold typography, gradients, rounded corners, modern spacing',
-    vintage: 'Serif fonts, muted colors, decorative elements, classic layout',
-    corporate: 'Professional, structured, conservative colors, formal typography',
-    creative: 'Bold colors, unique layouts, artistic elements, experimental design'
+    minimal: "Clean, white space, simple typography, subtle shadows",
+    modern: "Bold typography, gradients, rounded corners, modern spacing",
+    vintage: "Serif fonts, muted colors, decorative elements, classic layout",
+    corporate:
+      "Professional, structured, conservative colors, formal typography",
+    creative:
+      "Bold colors, unique layouts, artistic elements, experimental design",
   };
 
   const industryContent = {
     technology: {
-      heroTitle: 'Revolutionary Tech Solutions',
-      heroSubtitle: 'Transform your business with cutting-edge technology',
-      features: ['AI Integration', 'Cloud Solutions', 'Data Analytics', 'Security'],
-      cta: 'Get Started Free',
-      imageKeywords: 'technology, coding, software, digital, innovation, computer, data, cloud'
+      heroTitle: "Revolutionary Tech Solutions",
+      heroSubtitle: "Transform your business with cutting-edge technology",
+      features: [
+        "AI Integration",
+        "Cloud Solutions",
+        "Data Analytics",
+        "Security",
+      ],
+      cta: "Get Started Free",
+      imageKeywords:
+        "technology, coding, software, digital, innovation, computer, data, cloud",
     },
     healthcare: {
-      heroTitle: 'Advanced Healthcare Solutions',
-      heroSubtitle: 'Improving patient care through innovative technology',
-      features: ['Patient Management', 'Telemedicine', 'Data Security', 'Compliance'],
-      cta: 'Schedule Demo',
-      imageKeywords: 'healthcare, medical, doctor, hospital, health, medicine, patient, medical technology'
+      heroTitle: "Advanced Healthcare Solutions",
+      heroSubtitle: "Improving patient care through innovative technology",
+      features: [
+        "Patient Management",
+        "Telemedicine",
+        "Data Security",
+        "Compliance",
+      ],
+      cta: "Schedule Demo",
+      imageKeywords:
+        "healthcare, medical, doctor, hospital, health, medicine, patient, medical technology",
     },
     finance: {
-      heroTitle: 'Secure Financial Solutions',
-      heroSubtitle: 'Banking and financial services you can trust',
-      features: ['Secure Banking', 'Investment Tools', 'Risk Management', 'Compliance'],
-      cta: 'Open Account',
-      imageKeywords: 'finance, banking, money, investment, financial, business, economy, trading'
+      heroTitle: "Secure Financial Solutions",
+      heroSubtitle: "Banking and financial services you can trust",
+      features: [
+        "Secure Banking",
+        "Investment Tools",
+        "Risk Management",
+        "Compliance",
+      ],
+      cta: "Open Account",
+      imageKeywords:
+        "finance, banking, money, investment, financial, business, economy, trading",
     },
     ecommerce: {
-      heroTitle: 'Boost Your Online Sales',
-      heroSubtitle: 'Complete e-commerce solutions for modern businesses',
-      features: ['Online Store', 'Payment Processing', 'Inventory Management', 'Analytics'],
-      cta: 'Start Selling',
-      imageKeywords: 'ecommerce, shopping, online store, retail, products, commerce, marketplace'
+      heroTitle: "Boost Your Online Sales",
+      heroSubtitle: "Complete e-commerce solutions for modern businesses",
+      features: [
+        "Online Store",
+        "Payment Processing",
+        "Inventory Management",
+        "Analytics",
+      ],
+      cta: "Start Selling",
+      imageKeywords:
+        "ecommerce, shopping, online store, retail, products, commerce, marketplace",
     },
     education: {
-      heroTitle: 'Transform Learning Experience',
-      heroSubtitle: 'Advanced educational platforms for modern learning',
-      features: ['Interactive Courses', 'Progress Tracking', 'Certification', 'Community'],
-      cta: 'Start Learning',
-      imageKeywords: 'education, learning, students, school, university, online learning, study, knowledge'
+      heroTitle: "Transform Learning Experience",
+      heroSubtitle: "Advanced educational platforms for modern learning",
+      features: [
+        "Interactive Courses",
+        "Progress Tracking",
+        "Certification",
+        "Community",
+      ],
+      cta: "Start Learning",
+      imageKeywords:
+        "education, learning, students, school, university, online learning, study, knowledge",
     },
     realestate: {
-      heroTitle: 'Find Your Dream Property',
-      heroSubtitle: 'Premium real estate solutions for buyers and sellers',
-      features: ['Property Search', 'Virtual Tours', 'Market Analysis', 'Expert Agents'],
-      cta: 'Browse Properties',
-      imageKeywords: 'real estate, house, property, home, architecture, building, real estate agent'
+      heroTitle: "Find Your Dream Property",
+      heroSubtitle: "Premium real estate solutions for buyers and sellers",
+      features: [
+        "Property Search",
+        "Virtual Tours",
+        "Market Analysis",
+        "Expert Agents",
+      ],
+      cta: "Browse Properties",
+      imageKeywords:
+        "real estate, house, property, home, architecture, building, real estate agent",
     },
     food: {
-      heroTitle: 'Delicious Food Delivered',
-      heroSubtitle: 'Fresh ingredients, amazing flavors, delivered to your door',
-      features: ['Fresh Ingredients', 'Fast Delivery', 'Custom Orders', 'Quality Guarantee'],
-      cta: 'Order Now',
-      imageKeywords: 'food, restaurant, cooking, chef, delicious, meal, cuisine, dining'
+      heroTitle: "Delicious Food Delivered",
+      heroSubtitle:
+        "Fresh ingredients, amazing flavors, delivered to your door",
+      features: [
+        "Fresh Ingredients",
+        "Fast Delivery",
+        "Custom Orders",
+        "Quality Guarantee",
+      ],
+      cta: "Order Now",
+      imageKeywords:
+        "food, restaurant, cooking, chef, delicious, meal, cuisine, dining",
     },
     travel: {
-      heroTitle: 'Explore the World',
-      heroSubtitle: 'Discover amazing destinations and create unforgettable memories',
-      features: ['Best Deals', 'Expert Guides', '24/7 Support', 'Flexible Booking'],
-      cta: 'Book Now',
-      imageKeywords: 'travel, vacation, destination, tourism, adventure, journey, world, explore'
-    }
+      heroTitle: "Explore the World",
+      heroSubtitle:
+        "Discover amazing destinations and create unforgettable memories",
+      features: [
+        "Best Deals",
+        "Expert Guides",
+        "24/7 Support",
+        "Flexible Booking",
+      ],
+      cta: "Book Now",
+      imageKeywords:
+        "travel, vacation, destination, tourism, adventure, journey, world, explore",
+    },
   };
 
   const colorSchemes = {
-    blue: { primary: '#3B82F6', secondary: '#1E40AF', accent: '#60A5FA' },
-    green: { primary: '#10B981', secondary: '#047857', accent: '#34D399' },
-    purple: { primary: '#8B5CF6', secondary: '#7C3AED', accent: '#A78BFA' },
-    red: { primary: '#EF4444', secondary: '#DC2626', accent: '#F87171' },
-    orange: { primary: '#F59E0B', secondary: '#D97706', accent: '#FBBF24' },
-    pink: { primary: '#EC4899', secondary: '#BE185D', accent: '#F472B6' },
-    indigo: { primary: '#6366F1', secondary: '#4338CA', accent: '#818CF8' },
-    teal: { primary: '#14B8A6', secondary: '#0F766E', accent: '#5EEAD4' }
+    blue: { primary: "#3B82F6", secondary: "#1E40AF", accent: "#60A5FA" },
+    green: { primary: "#10B981", secondary: "#047857", accent: "#34D399" },
+    purple: { primary: "#8B5CF6", secondary: "#7C3AED", accent: "#A78BFA" },
+    red: { primary: "#EF4444", secondary: "#DC2626", accent: "#F87171" },
+    orange: { primary: "#F59E0B", secondary: "#D97706", accent: "#FBBF24" },
+    pink: { primary: "#EC4899", secondary: "#BE185D", accent: "#F472B6" },
+    indigo: { primary: "#6366F1", secondary: "#4338CA", accent: "#818CF8" },
+    teal: { primary: "#14B8A6", secondary: "#0F766E", accent: "#5EEAD4" },
   };
 
   // Parse custom color schemes and handle combinations
@@ -305,13 +386,20 @@ const buildPrompt = (options = {}) => {
   const industryData = industryContent[industry] || industryContent.technology;
   const styleGuide = styleGuidelines[style] || styleGuidelines.modern;
 
-  const selectedComponents = components.length > 0 ? components : ['header', 'hero', 'features', 'footer'];
-  const componentDescriptions = selectedComponents.map(c => componentMap[c]).filter(Boolean);
+  const selectedComponents =
+    components.length > 0
+      ? components
+      : ["header", "hero", "features", "footer"];
+  const componentDescriptions = selectedComponents
+    .map((c) => componentMap[c])
+    .filter(Boolean);
 
   // Build prompt dynamically based on model
   const prompt = `
 You are a world-class frontend engineer & UX/UI designer. 
-Your task is to generate a ${depthFocus ? 'highly detailed, production-ready' : 'clean and lightweight'} HTML5 layout.
+Your task is to generate a ${
+    depthFocus ? "highly detailed, production-ready" : "clean and lightweight"
+  } HTML5 layout.
 
 RESPONSE RULES:
 1. Return ONLY valid HTML5. No Markdown, JSON, comments, or explanations.
@@ -321,8 +409,16 @@ RESPONSE RULES:
 5. Inline ALL JS in <script> tags before </body>.
 6. Mobile-first responsive design with breakpoints at 640px, 768px, 1024px, and 1280px.
 7. Use CSS variables in :root for colors, typography, spacing, shadows.
-8. ${depthFocus ? 'Include advanced ARIA roles, WCAG compliance, and semantic structure' : 'Keep it simple but correct and semantic'}.
-9. ${depthFocus ? 'Add IntersectionObserver animations, lazy loading, SEO meta tags, Open Graph' : 'Focus on speed and clean code'}.
+8. ${
+    depthFocus
+      ? "Include advanced ARIA roles, WCAG compliance, and semantic structure"
+      : "Keep it simple but correct and semantic"
+  }.
+9. ${
+    depthFocus
+      ? "Add IntersectionObserver animations, lazy loading, SEO meta tags, Open Graph"
+      : "Focus on speed and clean code"
+  }.
 10. All images MUST use reliable, working URLs from Unsplash, Pexels, or similar services with proper dimensions and alt text.
 
 CRITICAL HTML VALIDATION RULES:
@@ -351,12 +447,14 @@ CODE QUALITY REQUIREMENTS:
 DESIGN SPECS:
 - Layout: ${layoutType}
 - Style: ${styleGuide}
-- Primary: ${colors.primary} | Secondary: ${colors.secondary} | Accent: ${colors.accent}
+- Primary: ${colors.primary} | Secondary: ${colors.secondary} | Accent: ${
+    colors.accent
+  }
 - Industry: ${industry} | Target Audience: ${targetAudience}
 - Color Preference: ${colorScheme} (use these colors as the foundation for the design)
 
 COMPONENTS:
-${componentDescriptions.map(c => `- ${c}`).join('\n')}
+${componentDescriptions.map((c) => `- ${c}`).join("\n")}
 
 COMPONENT IMAGE REQUIREMENTS:
 - Header: Use a logo or brand image (SVG or PNG) - ONLY in header content area
@@ -390,15 +488,19 @@ CRITICAL IMAGE PLACEMENT RULES:
 CONTENT:
 - Hero Title: ${industryData.heroTitle}
 - Hero Subtitle: ${industryData.heroSubtitle}
-- Features: ${industryData.features.join(', ')}
+- Features: ${industryData.features.join(", ")}
 - CTA Button: ${industryData.cta}
-- Image Keywords: ${industryData.imageKeywords} (use these keywords to find relevant images)
+- Image Keywords: ${
+    industryData.imageKeywords
+  } (use these keywords to find relevant images)
 
 COLOR USAGE:
 - CRITICAL: Use the specified color scheme (${colorScheme}) throughout the design
 - Primary color (${colors.primary}) for main elements, headers, and CTAs
 - Secondary color (${colors.secondary}) for supporting elements and backgrounds
-- Accent color (${colors.accent}) for highlights, buttons, and interactive elements
+- Accent color (${
+    colors.accent
+  }) for highlights, buttons, and interactive elements
 - Ensure the design reflects the user's color preference: ${colorScheme}
 
 IMAGE REQUIREMENTS:
@@ -438,7 +540,7 @@ IMAGE REQUIREMENTS:
   * Gallery: Multiple high-quality images
   * Products: Clear product photos with consistent styling
 
-${customBrief ? `CUSTOM BRIEF: ${customBrief}` : ''}
+${customBrief ? `CUSTOM BRIEF: ${customBrief}` : ""}
 
 IMAGE LOADING REQUIREMENTS:
 - Use proper img tags with src, alt, width, and height attributes
@@ -467,20 +569,29 @@ CSS LAYOUT GUIDELINES:
 DELIVERABLE:
 A single standalone HTML5 file that runs immediately in a browser with all images rendering correctly and proper, professional code quality.`;
 
-
   return prompt;
 };
 
 // Enhanced function to generate layout with AI using the new prompt builder
-const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences, componentsRequired = [], colorScheme = '', industry = '', targetAudience = '', model = 'gemini-2.5-pro' }) => {
+const generateLayoutWithAI = async ({
+  prompt,
+  layoutType,
+  style,
+  userPreferences,
+  componentsRequired = [],
+  colorScheme = "",
+  industry = "",
+  targetAudience = "",
+  model = "gemini-2.5-pro",
+}) => {
   try {
     // Validate required parameters
     if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
+      throw new Error("GEMINI_API_KEY is not configured");
     }
-    
+
     if (!layoutType) {
-      throw new Error('Layout type is required');
+      throw new Error("Layout type is required");
     }
     // Build the universal prompt
     const aiPrompt = buildPrompt({
@@ -491,13 +602,16 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       colorScheme,
       targetAudience,
       customBrief: prompt,
-      model
+      model,
     });
 
     const shouldDebug = true; // Always log/return prompt to aid debugging
     let promptDebugPreview;
     if (shouldDebug) {
-      promptDebugPreview = aiPrompt.length > 4000 ? `${aiPrompt.slice(0, 4000)}... [truncated]` : aiPrompt;
+      promptDebugPreview =
+        aiPrompt.length > 4000
+          ? `${aiPrompt.slice(0, 4000)}... [truncated]`
+          : aiPrompt;
     }
 
     const runWithModel = async (chosenModel) => {
@@ -507,11 +621,21 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
       } catch (sdkErr) {
         const msg = String(sdkErr?.message || sdkErr);
         const causeCode = sdkErr?.cause?.code || sdkErr?.code;
-        console.warn('[AI][Layout] SDK call failed:', msg, causeCode ? `(code: ${causeCode})` : '');
+        console.warn(
+          "[AI][Layout] SDK call failed:",
+          msg,
+          causeCode ? `(code: ${causeCode})` : ""
+        );
         // Network/proxy/cert issues: try REST fallback via axios
-        if (/fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(msg) ||
-            /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(String(causeCode))) {
-          console.warn('[AI][Layout] Trying REST fallback via axios');
+        if (
+          /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(
+            msg
+          ) ||
+          /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(
+            String(causeCode)
+          )
+        ) {
+          console.warn("[AI][Layout] Trying REST fallback via axios");
           const rest = await generateViaAxios(chosenModel, aiPrompt);
           // Shape a minimal object compatible with downstream usage
           return { response: { text: () => rest.text } };
@@ -526,38 +650,41 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     } catch (err) {
       const message = String(err?.message || err);
       if (/overloaded|503|unavailable|busy/i.test(message)) {
-        const fallback = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
-        console.warn(`[AI][Layout] Primary model failed (${model}). Falling back to: ${fallback}`);
+        const fallback =
+          process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
+        console.warn(
+          `[AI][Layout] Primary model failed (${model}). Falling back to: ${fallback}`
+        );
         result = await runWithModel(fallback);
       } else {
         throw err;
       }
     }
-    
+
     if (!result || !result.response) {
-      throw new Error('No response received from AI model');
+      throw new Error("No response received from AI model");
     }
-    
+
     let responseText = result.response.text();
-    
+
     if (!responseText || responseText.trim().length === 0) {
-      throw new Error('Empty response received from AI model');
+      throw new Error("Empty response received from AI model");
     }
-    
+
     // Clean up the response more thoroughly
     responseText = responseText
-      .replace(/```html\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .replace(/^```html$/gm, '')
-      .replace(/^```$/gm, '')
-      .replace(/^```json$/gm, '')
-      .replace(/^```css$/gm, '')
-      .replace(/^```javascript$/gm, '')
-      .replace(/^```js$/gm, '')
+      .replace(/```html\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .replace(/^```html$/gm, "")
+      .replace(/^```$/gm, "")
+      .replace(/^```json$/gm, "")
+      .replace(/^```css$/gm, "")
+      .replace(/^```javascript$/gm, "")
+      .replace(/^```js$/gm, "")
       .trim();
 
     // Check if response is JSON and extract HTML
-    if (responseText.startsWith('{') && responseText.includes('"html"')) {
+    if (responseText.startsWith("{") && responseText.includes('"html"')) {
       try {
         const parsed = JSON.parse(responseText);
         if (parsed.html) {
@@ -569,93 +696,149 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     }
 
     // Extract HTML content
-    const htmlStart = responseText.indexOf('<!DOCTYPE html>');
-    const htmlEnd = responseText.lastIndexOf('</html>') + 7;
-    
+    const htmlStart = responseText.indexOf("<!DOCTYPE html>");
+    const htmlEnd = responseText.lastIndexOf("</html>") + 7;
+
     if (htmlStart !== -1 && htmlEnd > htmlStart) {
       responseText = responseText.substring(htmlStart, htmlEnd);
     }
 
-
     // Fix common HTML issues
     // CRITICAL: Remove images from head section (invalid HTML)
-    
+
     // Find head section and remove img tags
     const headMatch = responseText.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
     if (headMatch) {
       const headContent = headMatch[1];
       const imgInHead = headContent.match(/<img[^>]*>/gi);
       if (imgInHead) {
-        const cleanedHead = headContent.replace(/<img[^>]*>/gi, '');
-        responseText = responseText.replace(headMatch[0], `<head>${cleanedHead}</head>`);
+        const cleanedHead = headContent.replace(/<img[^>]*>/gi, "");
+        responseText = responseText.replace(
+          headMatch[0],
+          `<head>${cleanedHead}</head>`
+        );
       }
     }
-    
+
     responseText = responseText
       // Fix malformed image tags
-      .replace(/<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
-      .replace(/<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
-      .replace(/<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(
+        /<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
+      .replace(
+        /<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
+      .replace(
+        /<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
       // Fix malformed SVG paths
-      .replace(/<path([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<path$1$2>')
-      .replace(/<path([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<path$1$2>')
-      .replace(/<path([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<path$1$2>')
+      .replace(
+        /<path([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<path$1$2>"
+      )
+      .replace(
+        /<path([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<path$1$2>"
+      )
+      .replace(
+        /<path([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi,
+        "<path$1$2>"
+      )
       // Fix broken style attributes
-      .replace(/style="[^"]*?word-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?overflow-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?hyphens:\s*none[^"]*?"/gi, '')
+      .replace(/style="[^"]*?word-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?overflow-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?hyphens:\s*none[^"]*?"/gi, "")
       // Fix malformed closing tags
-      .replace(/<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
-      .replace(/<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
-      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, '<$1>')
+      .replace(
+        /<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi,
+        "<$1>"
+      )
+      .replace(
+        /<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi,
+        "<$1>"
+      )
+      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, "<$1>")
       // Fix broken CSS
-      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, "")
       // Remove empty style attributes
-      .replace(/style="\s*"/gi, '')
-      .replace(/style='\s*'/gi, '')
+      .replace(/style="\s*"/gi, "")
+      .replace(/style='\s*'/gi, "")
       // Fix specific issues from the user's response
-      .replace(/<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
-      .replace(/<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<img$1$2>')
-      .replace(/<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<img$1$2>')
+      .replace(
+        /<img([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
+      .replace(
+        /<img([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
+      .replace(
+        /<img([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi,
+        "<img$1$2>"
+      )
       // Fix broken SVG elements
-      .replace(/<svg([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
-      .replace(/<svg([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
-      .replace(/<svg([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi, '<svg$1$2>')
+      .replace(
+        /<svg([^>]*?)style="[^"]*?word-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<svg$1$2>"
+      )
+      .replace(
+        /<svg([^>]*?)style="[^"]*?overflow-wrap:\s*break-word[^"]*?"([^>]*?)>/gi,
+        "<svg$1$2>"
+      )
+      .replace(
+        /<svg([^>]*?)style="[^"]*?hyphens:\s*none[^"]*?"([^>]*?)>/gi,
+        "<svg$1$2>"
+      )
       // Fix broken closing tags with style attributes
-      .replace(/<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
-      .replace(/<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi, '<$1>')
-      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, '<$1>')
+      .replace(
+        /<([^>]+?)\s*style="[^"]*?word-wrap:\s*break-word[^"]*?"\s*>/gi,
+        "<$1>"
+      )
+      .replace(
+        /<([^>]+?)\s*style="[^"]*?overflow-wrap:\s*break-word[^"]*?"\s*>/gi,
+        "<$1>"
+      )
+      .replace(/<([^>]+?)\s*style="[^"]*?hyphens:\s*none[^"]*?"\s*>/gi, "<$1>")
       // Fix broken CSS selectors
-      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, '')
-      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, '')
+      .replace(/style="[^"]*?;\s*word-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?;\s*overflow-wrap:\s*break-word[^"]*?"/gi, "")
+      .replace(/style="[^"]*?;\s*hyphens:\s*none[^"]*?"/gi, "")
       // Remove empty style attributes
-      .replace(/style="\s*"/gi, '')
-      .replace(/style='\s*'/gi, '');
-
+      .replace(/style="\s*"/gi, "")
+      .replace(/style='\s*'/gi, "");
 
     // Validate final HTML output and ensure complete structure
-    if (!responseText.includes('<!DOCTYPE html>')) {
+    if (!responseText.includes("<!DOCTYPE html>")) {
       responseText = `<!DOCTYPE html>\n${responseText}`;
     }
-    
-    if (!responseText.includes('<html')) {
-      responseText = responseText.replace('<!DOCTYPE html>', '<!DOCTYPE html>\n<html lang="en">') + '\n</html>';
-    }
-    
-    if (!responseText.includes('<head>')) {
-      responseText = responseText.replace('<html lang="en">', '<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Generated Layout</title>\n</head>');
-    }
-    
-    if (!responseText.includes('<body>')) {
-      responseText = responseText.replace('</head>', '</head>\n<body>') + '\n</body>';
+
+    if (!responseText.includes("<html")) {
+      responseText =
+        responseText.replace(
+          "<!DOCTYPE html>",
+          '<!DOCTYPE html>\n<html lang="en">'
+        ) + "\n</html>";
     }
 
-    
+    if (!responseText.includes("<head>")) {
+      responseText = responseText.replace(
+        '<html lang="en">',
+        '<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Generated Layout</title>\n</head>'
+      );
+    }
+
+    if (!responseText.includes("<body>")) {
+      responseText =
+        responseText.replace("</head>", "</head>\n<body>") + "\n</body>";
+    }
+
     // Add basic CSS if no styles are present
-    if (!responseText.includes('<style>')) {
+    if (!responseText.includes("<style>")) {
       const basicCSS = `
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -724,149 +907,196 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
             .two-column { column-count: 1; }
           }
         </style>`;
-      responseText = responseText.replace('</head>', basicCSS + '\n</head>');
+      responseText = responseText.replace("</head>", basicCSS + "\n</head>");
     }
-    
+
     // Fix image issues - ensure all images have proper URLs and attributes
     const workingImageUrls = [
-      'https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043472/pexels-photo-1043472.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043470/pexels-photo-1043470.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043469/pexels-photo-1043469.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043468/pexels-photo-1043468.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043467/pexels-photo-1043467.jpeg?w=1200&h=800&fit=crop&auto=format&q=90',
-      'https://images.pexels.com/photos/1043466/pexels-photo-1043466.jpeg?w=1200&h=800&fit=crop&auto=format&q=90'
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043472/pexels-photo-1043472.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043470/pexels-photo-1043470.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043469/pexels-photo-1043469.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043468/pexels-photo-1043468.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043467/pexels-photo-1043467.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1043466/pexels-photo-1043466.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
     ];
-    
+
     // Replace placeholder text with working images
-    responseText = responseText.replace(/placeholder[^>]*>/gi, '>');
-    responseText = responseText.replace(/Image placeholder/gi, '');
-    responseText = responseText.replace(/Product image/gi, '');
-    responseText = responseText.replace(/A person wearing/gi, '');
-    responseText = responseText.replace(/Colorful Y2K fashion/gi, '');
-    responseText = responseText.replace(/Someone in functional/gi, '');
-    responseText = responseText.replace(/Close-up of trendy/gi, '');
-    responseText = responseText.replace(/Fashionable woman/gi, '');
-    responseText = responseText.replace(/Stylish young person/gi, '');
-    
+    responseText = responseText.replace(/placeholder[^>]*>/gi, ">");
+    responseText = responseText.replace(/Image placeholder/gi, "");
+    responseText = responseText.replace(/Product image/gi, "");
+    responseText = responseText.replace(/A person wearing/gi, "");
+    responseText = responseText.replace(/Colorful Y2K fashion/gi, "");
+    responseText = responseText.replace(/Someone in functional/gi, "");
+    responseText = responseText.replace(/Close-up of trendy/gi, "");
+    responseText = responseText.replace(/Fashionable woman/gi, "");
+    responseText = responseText.replace(/Stylish young person/gi, "");
+
     // Fix broken image tags and ensure all images have working URLs
     let imageIndex = 0;
-    responseText = responseText.replace(/<img([^>]*)>/gi, (match, attributes) => {
-      // Check if this image is in the head section - if so, remove it entirely
-      const beforeMatch = responseText.substring(0, responseText.indexOf(match));
-      const headEnd = beforeMatch.lastIndexOf('</head>');
-      const headStart = beforeMatch.lastIndexOf('<head');
-      
-      if (headStart !== -1 && headEnd !== -1 && headStart < headEnd) {
-        return ''; // Remove the image entirely
-      }
-      
-      // Check if image has a proper src or if it's broken
-      if (!attributes.includes('src=') || 
-          attributes.includes('placeholder') || 
-          attributes.includes('broken') ||
-          attributes.includes('data:') ||
-          attributes.includes('blob:')) {
-        
-        const workingUrl = workingImageUrls[imageIndex % workingImageUrls.length];
-        const altText = attributes.includes('alt=') ? '' : ' alt="Product image"';
-        const widthHeight = attributes.includes('width=') ? '' : ' width="1200" height="800"';
-        const loading = attributes.includes('loading=') ? '' : ' loading="lazy"';
-        const onerror = attributes.includes('onerror=') ? '' : ' onerror="this.style.display=\'none\'; this.style.backgroundColor=\'#f3f4f6\'; this.style.border=\'2px dashed #d1d5db\'; this.innerHTML=\'<div style=\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\">Image not available</div>\';"';
-        
-        // Clean up the attributes to remove broken src
-        const cleanAttributes = attributes
-          .replace(/src\s*=\s*["'][^"']*["']/gi, '')
-          .replace(/placeholder/gi, '')
-          .replace(/broken/gi, '');
-        
-        return `<img src="${workingUrl}"${altText}${widthHeight}${loading}${onerror}${cleanAttributes}>`;
-      }
-      imageIndex++;
-      return match;
-    });
-    
-    // Also fix any divs or other elements that might contain placeholder text for images
-    responseText = responseText.replace(/<div[^>]*class="[^"]*placeholder[^"]*"[^>]*>.*?<\/div>/gi, (match) => {
-      const workingUrl = workingImageUrls[imageIndex % workingImageUrls.length];
-      imageIndex++;
-      return `<img src="${workingUrl}" alt="Product image" width="1200" height="800" loading="lazy" onerror="this.style.display='none'; this.style.backgroundColor='#f3f4f6'; this.style.border='2px dashed #d1d5db'; this.innerHTML='<div style=\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\">Image not available</div>';">`;
-    });
-    
-    // Final cleanup - replace any remaining text that looks like image descriptions
-    responseText = responseText.replace(/<[^>]*>([^<]*?(?:wearing|fashion|clothing|outfit|style|trendy|colorful|person|woman|man|young|close-up|someone|stylish)[^<]*?)<\/[^>]*>/gi, (match, text) => {
-      // If this looks like a description that should be an image, replace with an image
-      if (text.length > 10 && text.length < 100) {
-        const workingUrl = workingImageUrls[imageIndex % workingImageUrls.length];
+    responseText = responseText.replace(
+      /<img([^>]*)>/gi,
+      (match, attributes) => {
+        // Check if this image is in the head section - if so, remove it entirely
+        const beforeMatch = responseText.substring(
+          0,
+          responseText.indexOf(match)
+        );
+        const headEnd = beforeMatch.lastIndexOf("</head>");
+        const headStart = beforeMatch.lastIndexOf("<head");
+
+        if (headStart !== -1 && headEnd !== -1 && headStart < headEnd) {
+          return ""; // Remove the image entirely
+        }
+
+        // Check if image has a proper src or if it's broken
+        if (
+          !attributes.includes("src=") ||
+          attributes.includes("placeholder") ||
+          attributes.includes("broken") ||
+          attributes.includes("data:") ||
+          attributes.includes("blob:")
+        ) {
+          const workingUrl =
+            workingImageUrls[imageIndex % workingImageUrls.length];
+          const altText = attributes.includes("alt=")
+            ? ""
+            : ' alt="Product image"';
+          const widthHeight = attributes.includes("width=")
+            ? ""
+            : ' width="1200" height="800"';
+          const loading = attributes.includes("loading=")
+            ? ""
+            : ' loading="lazy"';
+          const onerror = attributes.includes("onerror=")
+            ? ""
+            : " onerror=\"this.style.display='none'; this.style.backgroundColor='#f3f4f6'; this.style.border='2px dashed #d1d5db'; this.innerHTML='<div style=\\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\\">Image not available</div>';\"";
+
+          // Clean up the attributes to remove broken src
+          const cleanAttributes = attributes
+            .replace(/src\s*=\s*["'][^"']*["']/gi, "")
+            .replace(/placeholder/gi, "")
+            .replace(/broken/gi, "");
+
+          return `<img src="${workingUrl}"${altText}${widthHeight}${loading}${onerror}${cleanAttributes}>`;
+        }
         imageIndex++;
-        return `<img src="${workingUrl}" alt="${text.trim()}" width="1200" height="800" loading="lazy" onerror="this.style.display='none'">`;
+        return match;
       }
-      return match;
-    });
-    
+    );
+
+    // Also fix any divs or other elements that might contain placeholder text for images
+    responseText = responseText.replace(
+      /<div[^>]*class="[^"]*placeholder[^"]*"[^>]*>.*?<\/div>/gi,
+      (match) => {
+        const workingUrl =
+          workingImageUrls[imageIndex % workingImageUrls.length];
+        imageIndex++;
+        return `<img src="${workingUrl}" alt="Product image" width="1200" height="800" loading="lazy" onerror="this.style.display='none'; this.style.backgroundColor='#f3f4f6'; this.style.border='2px dashed #d1d5db'; this.innerHTML='<div style=\\"display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px\\">Image not available</div>';">`;
+      }
+    );
+
+    // Final cleanup - replace any remaining text that looks like image descriptions
+    responseText = responseText.replace(
+      /<[^>]*>([^<]*?(?:wearing|fashion|clothing|outfit|style|trendy|colorful|person|woman|man|young|close-up|someone|stylish)[^<]*?)<\/[^>]*>/gi,
+      (match, text) => {
+        // If this looks like a description that should be an image, replace with an image
+        if (text.length > 10 && text.length < 100) {
+          const workingUrl =
+            workingImageUrls[imageIndex % workingImageUrls.length];
+          imageIndex++;
+          return `<img src="${workingUrl}" alt="${text.trim()}" width="1200" height="800" loading="lazy" onerror="this.style.display='none'">`;
+        }
+        return match;
+      }
+    );
+
     // Fix JavaScript syntax errors and common issues
-    responseText = responseText.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (match, scriptContent) => {
-      // Clean up common JavaScript syntax issues
-      let cleanedScript = scriptContent
-        .replace(/console\.log\([^)]*\);/gi, '') // Remove console.log statements
-        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
-        .replace(/\/\/.*$/gm, '') // Remove line comments
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim();
-      
-      // Only return the script if it has valid content
-      if (cleanedScript && cleanedScript.length > 10) {
-        return `<script>${cleanedScript}</script>`;
+    responseText = responseText.replace(
+      /<script[^>]*>([\s\S]*?)<\/script>/gi,
+      (match, scriptContent) => {
+        // Clean up common JavaScript syntax issues
+        let cleanedScript = scriptContent
+          .replace(/console\.log\([^)]*\);/gi, "") // Remove console.log statements
+          .replace(/\/\*[\s\S]*?\*\//g, "") // Remove block comments
+          .replace(/\/\/.*$/gm, "") // Remove line comments
+          .replace(/\s+/g, " ") // Normalize whitespace
+          .trim();
+
+        // Only return the script if it has valid content
+        if (cleanedScript && cleanedScript.length > 10) {
+          return `<script>${cleanedScript}</script>`;
+        }
+        return ""; // Remove empty or invalid scripts
       }
-      return ''; // Remove empty or invalid scripts
-    });
+    );
 
     // Fix common layout and typography issues
     responseText = responseText.replace(/style="[^"]*"/gi, (match) => {
       // Add word-wrap and overflow-wrap to existing styles
-      if (!match.includes('word-wrap') && !match.includes('overflow-wrap')) {
-        return match.replace('"', '; word-wrap: break-word; overflow-wrap: break-word; hyphens: none;"');
+      if (!match.includes("word-wrap") && !match.includes("overflow-wrap")) {
+        return match.replace(
+          '"',
+          '; word-wrap: break-word; overflow-wrap: break-word; hyphens: none;"'
+        );
       }
       return match;
     });
-    
+
     // Fix awkward text wrapping and hyphenation
-    responseText = responseText.replace(/<p([^>]*)>/gi, '<p$1 style="word-wrap: break-word; overflow-wrap: break-word; hyphens: none;">');
-    responseText = responseText.replace(/<div([^>]*)>/gi, '<div$1 style="word-wrap: break-word; overflow-wrap: break-word;">');
-    
+    responseText = responseText.replace(
+      /<p([^>]*)>/gi,
+      '<p$1 style="word-wrap: break-word; overflow-wrap: break-word; hyphens: none;">'
+    );
+    responseText = responseText.replace(
+      /<div([^>]*)>/gi,
+      '<div$1 style="word-wrap: break-word; overflow-wrap: break-word;">'
+    );
+
     // Ensure proper responsive text sizing
-    responseText = responseText.replace(/font-size:\s*(\d+)px/gi, 'font-size: clamp($1px, 2.5vw, $1px)');
-    
+    responseText = responseText.replace(
+      /font-size:\s*(\d+)px/gi,
+      "font-size: clamp($1px, 2.5vw, $1px)"
+    );
+
     // Fix column layouts to be more balanced
-    responseText = responseText.replace(/column-count:\s*2/gi, 'column-count: 2; column-fill: balance; column-gap: 2rem;');
-    
-    if (!responseText.includes('</html>')) {
+    responseText = responseText.replace(
+      /column-count:\s*2/gi,
+      "column-count: 2; column-fill: balance; column-gap: 2rem;"
+    );
+
+    if (!responseText.includes("</html>")) {
       responseText = `${responseText}\n</html>`;
     }
 
     // FINAL CLEANUP: Remove any images that might have been added to inappropriate sections
-    
+
     // Remove images from head section
     const finalHeadMatch = responseText.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
     if (finalHeadMatch) {
       const finalHeadContent = finalHeadMatch[1];
       const finalImgInHead = finalHeadContent.match(/<img[^>]*>/gi);
       if (finalImgInHead) {
-        const finalCleanedHead = finalHeadContent.replace(/<img[^>]*>/gi, '');
-        responseText = responseText.replace(finalHeadMatch[0], `<head>${finalCleanedHead}</head>`);
+        const finalCleanedHead = finalHeadContent.replace(/<img[^>]*>/gi, "");
+        responseText = responseText.replace(
+          finalHeadMatch[0],
+          `<head>${finalCleanedHead}</head>`
+        );
       }
     }
-    
+
     // Remove images from footer section and replace with appropriate SVG icons
-    const footerMatch = responseText.match(/<footer[^>]*>([\s\S]*?)<\/footer>/gi);
+    const footerMatch = responseText.match(
+      /<footer[^>]*>([\s\S]*?)<\/footer>/gi
+    );
     if (footerMatch) {
       footerMatch.forEach((footer, index) => {
         const imgInFooter = footer.match(/<img[^>]*>/gi);
@@ -874,24 +1104,30 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
           // Replace images with appropriate SVG social media icons
           let cleanedFooter = footer.replace(/<img[^>]*>/gi, (imgTag) => {
             // Check if it's a social media icon by looking at alt text or src
-            if (imgTag.includes('social') || imgTag.includes('instagram') || imgTag.includes('twitter') || imgTag.includes('facebook') || imgTag.includes('youtube')) {
+            if (
+              imgTag.includes("social") ||
+              imgTag.includes("instagram") ||
+              imgTag.includes("twitter") ||
+              imgTag.includes("facebook") ||
+              imgTag.includes("youtube")
+            ) {
               return '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8"/></svg>';
             }
-            return ''; // Remove other images
+            return ""; // Remove other images
           });
-          
+
           responseText = responseText.replace(footer, cleanedFooter);
         }
       });
     }
-    
+
     // Remove images from navigation sections
     const navMatch = responseText.match(/<nav[^>]*>([\s\S]*?)<\/nav>/gi);
     if (navMatch) {
       navMatch.forEach((nav, index) => {
         const imgInNav = nav.match(/<img[^>]*>/gi);
         if (imgInNav) {
-          const cleanedNav = nav.replace(/<img[^>]*>/gi, '');
+          const cleanedNav = nav.replace(/<img[^>]*>/gi, "");
           responseText = responseText.replace(nav, cleanedNav);
         }
       });
@@ -900,29 +1136,30 @@ const generateLayoutWithAI = async ({ prompt, layoutType, style, userPreferences
     const finalResponse = {
       success: true,
       htmlCode: responseText,
-      cssCode: '', // CSS is embedded in HTML
+      cssCode: "", // CSS is embedded in HTML
       components: componentsRequired,
       layoutType,
       style,
       industry,
       colorScheme,
       title: `${industry} ${layoutType} - ${style} design`,
-      description: `AI-generated ${layoutType} layout with ${style} design for ${industry} industry`
+      description: `AI-generated ${layoutType} layout with ${style} design for ${industry} industry`,
     };
 
     if (shouldDebug && promptDebugPreview) {
       finalResponse.promptDebug = promptDebugPreview;
     }
 
-
     return finalResponse;
-    
   } catch (error) {
-    console.error('❌ Layout generation error:', error);
+    console.error("❌ Layout generation error:", error);
     // Attach prompt for upstream handlers to return to client
     try {
-      if (!error.promptDebug && typeof aiPrompt === 'string') {
-        const preview = aiPrompt.length > 4000 ? `${aiPrompt.slice(0, 4000)}... [truncated]` : aiPrompt;
+      if (!error.promptDebug && typeof aiPrompt === "string") {
+        const preview =
+          aiPrompt.length > 4000
+            ? `${aiPrompt.slice(0, 4000)}... [truncated]`
+            : aiPrompt;
         error.promptDebug = preview;
       }
     } catch (_) {}
@@ -935,10 +1172,15 @@ const generateLayoutJSON = async (options) => {
   // Return a simple JSON structure for compatibility
   return {
     success: true,
-    components: options.componentsRequired || ['header', 'hero', 'features', 'footer'],
-    layoutType: options.layoutType || 'landing-page',
-    style: options.style || 'modern',
-    industry: options.industry || 'technology'
+    components: options.componentsRequired || [
+      "header",
+      "hero",
+      "features",
+      "footer",
+    ],
+    layoutType: options.layoutType || "landing-page",
+    style: options.style || "modern",
+    industry: options.industry || "technology",
   };
 };
 
@@ -950,98 +1192,105 @@ const generateHTMLCSS = async (layoutData, options) => {
 // Advanced Color Palette Generator with gradients/semantic colors
 const buildColorPalettePrompt = (options = {}) => {
   const {
-    mood = 'modern',
-    industry = 'technology',
-    paletteType = 'custom',
-    prompt = '',
-    model = 'gemini-2.5-pro',
+    mood = "modern",
+    industry = "technology",
+    paletteType = "custom",
+    prompt = "",
+    model = "gemini-2.5-pro",
     includeGradients = true,
     includeTextureColors = false,
     semanticColors = true,
-    colorHarmony = 'balanced',
-    accessibilityLevel = 'AA'
+    colorHarmony = "balanced",
+    accessibilityLevel = "AA",
   } = options;
 
-  const depthFocus = model.includes('pro');
+  const depthFocus = model.includes("pro");
 
   const moodGuidelines = {
-    modern: 'Clean, contemporary colors with high contrast and bold accents',
-    minimal: 'Neutral tones with subtle variations and plenty of whitespace',
-    vibrant: 'Bold, energetic colors with high saturation and strong contrasts',
-    elegant: 'Sophisticated, muted tones with refined color relationships',
-    playful: 'Bright, cheerful colors with fun combinations and gradients',
-    professional: 'Conservative, trustworthy colors suitable for business',
-    creative: 'Experimental, artistic colors with unique combinations',
-    vintage: 'Retro-inspired colors with muted tones and nostalgic feel',
-    futuristic: 'Neon accents, dark backgrounds, cyberpunk-inspired colors',
-    organic: 'Earth tones, natural colors inspired by nature',
-    luxury: 'Rich, premium colors with metallic accents',
-    energetic: 'High-energy colors that inspire action and movement'
+    modern: "Clean, contemporary colors with high contrast and bold accents",
+    minimal: "Neutral tones with subtle variations and plenty of whitespace",
+    vibrant: "Bold, energetic colors with high saturation and strong contrasts",
+    elegant: "Sophisticated, muted tones with refined color relationships",
+    playful: "Bright, cheerful colors with fun combinations and gradients",
+    professional: "Conservative, trustworthy colors suitable for business",
+    creative: "Experimental, artistic colors with unique combinations",
+    vintage: "Retro-inspired colors with muted tones and nostalgic feel",
+    futuristic: "Neon accents, dark backgrounds, cyberpunk-inspired colors",
+    organic: "Earth tones, natural colors inspired by nature",
+    luxury: "Rich, premium colors with metallic accents",
+    energetic: "High-energy colors that inspire action and movement",
   };
 
   const industryContext = {
-    technology: 'Tech companies, startups, software, digital products',
-    healthcare: 'Medical, wellness, pharmaceutical, healthcare services',
-    finance: 'Banking, investment, insurance, financial services',
-    ecommerce: 'Online retail, shopping, marketplace, consumer goods',
-    education: 'Schools, universities, online learning, educational content',
-    realestate: 'Property, housing, real estate, construction',
-    food: 'Restaurants, food delivery, culinary, hospitality',
-    travel: 'Tourism, hospitality, travel booking, adventure',
-    fashion: 'Clothing, beauty, lifestyle, luxury brands',
-    entertainment: 'Media, gaming, music, entertainment content',
-    fitness: 'Gyms, sports, wellness, health tracking apps',
-    cryptocurrency: 'Blockchain, digital currency, fintech, trading',
-    sustainability: 'Green energy, eco-friendly, environmental',
-    automotive: 'Cars, transportation, mobility, racing'
+    technology: "Tech companies, startups, software, digital products",
+    healthcare: "Medical, wellness, pharmaceutical, healthcare services",
+    finance: "Banking, investment, insurance, financial services",
+    ecommerce: "Online retail, shopping, marketplace, consumer goods",
+    education: "Schools, universities, online learning, educational content",
+    realestate: "Property, housing, real estate, construction",
+    food: "Restaurants, food delivery, culinary, hospitality",
+    travel: "Tourism, hospitality, travel booking, adventure",
+    fashion: "Clothing, beauty, lifestyle, luxury brands",
+    entertainment: "Media, gaming, music, entertainment content",
+    fitness: "Gyms, sports, wellness, health tracking apps",
+    cryptocurrency: "Blockchain, digital currency, fintech, trading",
+    sustainability: "Green energy, eco-friendly, environmental",
+    automotive: "Cars, transportation, mobility, racing",
   };
 
   const paletteTypes = {
-    monochromatic: 'Single hue with various shades and tints',
-    analogous: 'Adjacent colors on the color wheel',
-    complementary: 'Opposite colors on the color wheel',
-    triadic: 'Three evenly spaced colors on the color wheel',
-    tetradic: 'Four colors forming a rectangle on the color wheel',
-    splitComplementary: 'Base color plus two colors adjacent to its complement',
-    square: 'Four colors evenly spaced around the color wheel',
-    custom: 'Custom color combination based on specific requirements',
-    gradient: 'Colors designed specifically for smooth gradient transitions'
+    monochromatic: "Single hue with various shades and tints",
+    analogous: "Adjacent colors on the color wheel",
+    complementary: "Opposite colors on the color wheel",
+    triadic: "Three evenly spaced colors on the color wheel",
+    tetradic: "Four colors forming a rectangle on the color wheel",
+    splitComplementary: "Base color plus two colors adjacent to its complement",
+    square: "Four colors evenly spaced around the color wheel",
+    custom: "Custom color combination based on specific requirements",
+    gradient: "Colors designed specifically for smooth gradient transitions",
   };
 
   const colorHarmonyTypes = {
-    balanced: 'Equal visual weight across all colors',
-    dominant: 'One primary color dominates with supporting colors',
-    contrasting: 'High contrast between light and dark elements',
-    subtle: 'Low contrast with gentle color transitions',
-    dynamic: 'Varying intensities creating visual rhythm'
+    balanced: "Equal visual weight across all colors",
+    dominant: "One primary color dominates with supporting colors",
+    contrasting: "High contrast between light and dark elements",
+    subtle: "Low contrast with gentle color transitions",
+    dynamic: "Varying intensities creating visual rhythm",
   };
 
   const moodGuide = moodGuidelines[mood] || moodGuidelines.modern;
   const industryDesc = industryContext[industry] || industryContext.technology;
   const paletteDesc = paletteTypes[paletteType] || paletteTypes.custom;
-  const harmonyDesc = colorHarmonyTypes[colorHarmony] || colorHarmonyTypes.balanced;
+  const harmonyDesc =
+    colorHarmonyTypes[colorHarmony] || colorHarmonyTypes.balanced;
 
-  const gradientFeatures = includeGradients ? `
+  const gradientFeatures = includeGradients
+    ? `
 GRADIENT REQUIREMENTS:
 - Create 3-5 gradient combinations using palette colors
 - Include linear, radial, and conic gradient variations
 - Provide CSS gradient syntax ready for implementation
 - Ensure smooth color transitions without muddy middle tones
-- Include gradient overlays for text readability` : '';
+- Include gradient overlays for text readability`
+    : "";
 
-  const textureFeatures = includeTextureColors ? `
+  const textureFeatures = includeTextureColors
+    ? `
 TEXTURE COLOR FEATURES:
 - Provide shadow and highlight variations for depth
 - Include noise/texture overlay colors
 - Create color variations for different material surfaces
-- Provide glass morphism color variations` : '';
+- Provide glass morphism color variations`
+    : "";
 
-  const semanticFeatures = semanticColors ? `
+  const semanticFeatures = semanticColors
+    ? `
 SEMANTIC COLORS:
 - Success, warning, error, and info state colors
 - Interactive state colors (hover, active, disabled)
 - Loading and progress indicator colors
-- Notification and badge colors` : '';
+- Notification and badge colors`
+    : "";
 
   const aiPrompt = `
 You are a world-class color theory expert, UI/UX designer, and digital artist specializing in advanced color systems.
@@ -1051,7 +1300,11 @@ RESPONSE RULES:
 1. Return ONLY valid JSON. No markdown, explanations, or code blocks.
 2. Include exactly 8-12 colors with proper naming and relationships.
 3. Ensure accessibility compliance with WCAG ${accessibilityLevel} standards.
-4. ${depthFocus ? 'Include detailed color psychology, usage guidelines, and design system recommendations' : 'Keep it practical with essential usage notes'}.
+4. ${
+    depthFocus
+      ? "Include detailed color psychology, usage guidelines, and design system recommendations"
+      : "Keep it practical with essential usage notes"
+  }.
 5. Include advanced features: gradients, semantic colors, and interactive states.
 
 PALETTE REQUIREMENTS:
@@ -1066,7 +1319,7 @@ ${gradientFeatures}
 ${textureFeatures}
 ${semanticFeatures}
 
-${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ''}
+${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ""}
 
 JSON STRUCTURE:
 {
@@ -1127,7 +1380,7 @@ JSON STRUCTURE:
     "colored": "rgba(primary_rgb,0.2)"
   },
   "accessibility": {
-    "contrastRatio": ${accessibilityLevel === 'AAA' ? 7.0 : 4.5},
+    "contrastRatio": ${accessibilityLevel === "AAA" ? 7.0 : 4.5},
     "wcagCompliant": true,
     "level": "${accessibilityLevel}",
     "notes": "All color combinations tested for accessibility",
@@ -1172,12 +1425,28 @@ JSON STRUCTURE:
 
 // Theme variations prompt helper
 const buildThemeVariations = (basePalette, options = {}) => {
-  const { includeDark = true, includeHighContrast = false, includeSepia = false } = options;
+  const {
+    includeDark = true,
+    includeHighContrast = false,
+    includeSepia = false,
+  } = options;
   return `
 Create theme variations for the base palette:
-${includeDark ? '- Dark mode: Invert luminosity while maintaining color relationships' : ''}
-${includeHighContrast ? '- High contrast: Maximum accessibility with bold color differences' : ''}
-${includeSepia ? '- Sepia mode: Warm, vintage-inspired monochromatic variation' : ''}
+${
+  includeDark
+    ? "- Dark mode: Invert luminosity while maintaining color relationships"
+    : ""
+}
+${
+  includeHighContrast
+    ? "- High contrast: Maximum accessibility with bold color differences"
+    : ""
+}
+${
+  includeSepia
+    ? "- Sepia mode: Warm, vintage-inspired monochromatic variation"
+    : ""
+}
 
 Each theme should maintain:
 1. Brand recognition through color relationships
@@ -1187,17 +1456,23 @@ Each theme should maintain:
 `;
 };
 
-const { ColorPaletteGenerator } = require('./paletteService');
+const { ColorPaletteGenerator } = require("./paletteService");
 
-const generateColorPaletteWithAI = async ({ prompt, mood, industry, paletteType, model = 'gemini-2.5-pro' }) => {
+const generateColorPaletteWithAI = async ({
+  prompt,
+  mood,
+  industry,
+  paletteType,
+  model = "gemini-2.5-pro",
+}) => {
   try {
     const generator = new ColorPaletteGenerator(genAI);
     const normalizedPalette = await generator.generate({
       prompt: `${prompt}`,
       mood,
-      industry: industry || 'technology',
-      paletteType: paletteType || 'custom',
-      model
+      industry: industry || "technology",
+      paletteType: paletteType || "custom",
+      model,
     });
     return normalizedPalette;
   } catch (error) {
@@ -1210,40 +1485,45 @@ const normalizeColorPalette = (palette, mood, industry) => {
   // Ensure required fields exist
   const normalized = {
     name: palette.name || `${mood} ${industry} Palette`,
-    description: palette.description || `A ${mood} color palette for ${industry} applications`,
+    description:
+      palette.description ||
+      `A ${mood} color palette for ${industry} applications`,
     mood: palette.mood || mood,
     industry: palette.industry || industry,
-    paletteType: palette.paletteType || 'custom',
+    paletteType: palette.paletteType || "custom",
     colors: {},
     accessibility: {
-      contrastRatio: typeof palette.accessibility?.contrastRatio === 'number' 
-        ? palette.accessibility.contrastRatio 
-        : 4.5,
+      contrastRatio:
+        typeof palette.accessibility?.contrastRatio === "number"
+          ? palette.accessibility.contrastRatio
+          : 4.5,
       wcagCompliant: Boolean(palette.accessibility?.wcagCompliant),
-      notes: palette.accessibility?.notes || 'Accessibility compliant'
+      notes: palette.accessibility?.notes || "Accessibility compliant",
     },
     usage: palette.usage || {
-      primary: 'Use for main CTAs, links, and brand elements',
-      secondary: 'Use for supporting elements and highlights',
-      accent: 'Use sparingly for emphasis and special elements'
+      primary: "Use for main CTAs, links, and brand elements",
+      secondary: "Use for supporting elements and highlights",
+      accent: "Use sparingly for emphasis and special elements",
     },
-    tags: Array.isArray(palette.tags) ? palette.tags : [mood, industry, 'accessible', 'modern']
+    tags: Array.isArray(palette.tags)
+      ? palette.tags
+      : [mood, industry, "accessible", "modern"],
   };
 
   const src = palette.colors || {};
   const pickHex = (obj) => {
     if (!obj) return undefined;
-    if (typeof obj === 'string') return obj;
+    if (typeof obj === "string") return obj;
     if (obj.hex) return obj.hex;
     return undefined;
   };
 
   // Map to backend schema keys only
-  const primaryHex = pickHex(src.primary) || '#3B82F6';
-  const secondaryHex = pickHex(src.secondary) || '#64748B';
-  const accentHex = pickHex(src.accent) || '#F59E0B';
-  const backgroundHex = pickHex(src.background) || '#FFFFFF';
-  const textHex = pickHex(src.text || src.textPrimary) || '#1F2937';
+  const primaryHex = pickHex(src.primary) || "#3B82F6";
+  const secondaryHex = pickHex(src.secondary) || "#64748B";
+  const accentHex = pickHex(src.accent) || "#F59E0B";
+  const backgroundHex = pickHex(src.background) || "#FFFFFF";
+  const textHex = pickHex(src.text || src.textPrimary) || "#1F2937";
 
   normalized.colors.primary = { hex: primaryHex };
   normalized.colors.secondary = { hex: secondaryHex };
@@ -1266,57 +1546,57 @@ const normalizeColorPalette = (palette, mood, industry) => {
   if (neutrals.length) normalized.colors.neutral = neutrals;
 
   // Map gradients if provided
-  if (palette.gradients && typeof palette.gradients === 'object') {
+  if (palette.gradients && typeof palette.gradients === "object") {
     normalized.gradients = {};
     if (palette.gradients.primary) {
       normalized.gradients.primary = {
         linear: palette.gradients.primary.linear,
         radial: palette.gradients.primary.radial,
-        usage: palette.gradients.primary.usage
+        usage: palette.gradients.primary.usage,
       };
     }
     if (palette.gradients.accent) {
       normalized.gradients.accent = {
         linear: palette.gradients.accent.linear,
         radial: palette.gradients.accent.radial,
-        usage: palette.gradients.accent.usage
+        usage: palette.gradients.accent.usage,
       };
     }
     if (palette.gradients.neutral) {
       normalized.gradients.neutral = {
         linear: palette.gradients.neutral.linear,
-        usage: palette.gradients.neutral.usage
+        usage: palette.gradients.neutral.usage,
       };
     }
     if (palette.gradients.glass) {
       normalized.gradients.glass = {
         backdrop: palette.gradients.glass.backdrop,
         border: palette.gradients.glass.border,
-        usage: palette.gradients.glass.usage
+        usage: palette.gradients.glass.usage,
       };
     }
   }
 
   // Fallback gradients if missing
   if (!normalized.gradients) {
-    const p = normalized.colors.primary?.hex || '#3B82F6';
-    const a = normalized.colors.accent?.hex || '#F59E0B';
-    const n = (normalized.colors.neutral?.[0]?.hex) || '#E5E7EB';
+    const p = normalized.colors.primary?.hex || "#3B82F6";
+    const a = normalized.colors.accent?.hex || "#F59E0B";
+    const n = normalized.colors.neutral?.[0]?.hex || "#E5E7EB";
     normalized.gradients = {
       primary: {
         linear: `linear-gradient(135deg, ${p} 0%, ${a} 100%)`,
         radial: `radial-gradient(circle, ${p} 0%, ${a} 100%)`,
-        usage: 'Hero sections, buttons, cards'
+        usage: "Hero sections, buttons, cards",
       },
       accent: {
         linear: `linear-gradient(45deg, ${a} 0%, ${p} 100%)`,
         radial: `radial-gradient(ellipse, ${a} 0%, ${p} 100%)`,
-        usage: 'CTAs, highlights, special elements'
+        usage: "CTAs, highlights, special elements",
       },
       neutral: {
         linear: `linear-gradient(180deg, ${n} 0%, #ffffff 100%)`,
-        usage: 'Backgrounds, overlays, subtle effects'
-      }
+        usage: "Backgrounds, overlays, subtle effects",
+      },
     };
   }
 
@@ -1326,45 +1606,45 @@ const normalizeColorPalette = (palette, mood, industry) => {
 // Enhanced Font Suggestions
 const buildFontSuggestionsPrompt = (options = {}) => {
   const {
-    industry = 'technology',
-    tone = 'professional',
-    usage = 'web',
-    prompt = '',
-    model = 'gemini-2.5-pro'
+    industry = "technology",
+    tone = "professional",
+    usage = "web",
+    prompt = "",
+    model = "gemini-2.5-pro",
   } = options;
 
-  const depthFocus = model.includes('pro');
+  const depthFocus = model.includes("pro");
 
   const toneGuidelines = {
-    professional: 'Clean, authoritative, trustworthy, and business-appropriate',
-    modern: 'Contemporary, sleek, minimalist, and forward-thinking',
-    elegant: 'Sophisticated, refined, luxurious, and graceful',
-    playful: 'Fun, friendly, approachable, and energetic',
-    creative: 'Artistic, unique, experimental, and expressive',
-    minimal: 'Simple, clean, uncluttered, and focused',
-    bold: 'Strong, confident, impactful, and attention-grabbing',
-    friendly: 'Warm, approachable, welcoming, and personable'
+    professional: "Clean, authoritative, trustworthy, and business-appropriate",
+    modern: "Contemporary, sleek, minimalist, and forward-thinking",
+    elegant: "Sophisticated, refined, luxurious, and graceful",
+    playful: "Fun, friendly, approachable, and energetic",
+    creative: "Artistic, unique, experimental, and expressive",
+    minimal: "Simple, clean, uncluttered, and focused",
+    bold: "Strong, confident, impactful, and attention-grabbing",
+    friendly: "Warm, approachable, welcoming, and personable",
   };
 
   const industryContext = {
-    technology: 'Tech companies, software, digital products, startups',
-    healthcare: 'Medical, wellness, healthcare, pharmaceutical',
-    finance: 'Banking, investment, insurance, financial services',
-    ecommerce: 'Online retail, shopping, marketplace, consumer goods',
-    education: 'Schools, universities, online learning, educational content',
-    realestate: 'Property, housing, real estate, construction',
-    food: 'Restaurants, food delivery, culinary, hospitality',
-    travel: 'Tourism, hospitality, travel booking, adventure',
-    fashion: 'Clothing, beauty, lifestyle, luxury brands',
-    entertainment: 'Media, gaming, music, entertainment content'
+    technology: "Tech companies, software, digital products, startups",
+    healthcare: "Medical, wellness, healthcare, pharmaceutical",
+    finance: "Banking, investment, insurance, financial services",
+    ecommerce: "Online retail, shopping, marketplace, consumer goods",
+    education: "Schools, universities, online learning, educational content",
+    realestate: "Property, housing, real estate, construction",
+    food: "Restaurants, food delivery, culinary, hospitality",
+    travel: "Tourism, hospitality, travel booking, adventure",
+    fashion: "Clothing, beauty, lifestyle, luxury brands",
+    entertainment: "Media, gaming, music, entertainment content",
   };
 
   const usageContext = {
-    web: 'Web applications, websites, responsive design',
-    mobile: 'Mobile apps, iOS, Android, touch interfaces',
-    print: 'Print materials, brochures, magazines, books',
-    branding: 'Logo design, brand identity, marketing materials',
-    ui: 'User interface design, dashboards, admin panels'
+    web: "Web applications, websites, responsive design",
+    mobile: "Mobile apps, iOS, Android, touch interfaces",
+    print: "Print materials, brochures, magazines, books",
+    branding: "Logo design, brand identity, marketing materials",
+    ui: "User interface design, dashboards, admin panels",
   };
 
   const toneGuide = toneGuidelines[tone] || toneGuidelines.professional;
@@ -1379,7 +1659,11 @@ RESPONSE RULES:
 1. Return ONLY valid JSON. No markdown, explanations, or code blocks.
 2. Include 3-5 font combinations with detailed reasoning.
 3. Ensure web-safe fonts and Google Fonts availability.
-4. ${depthFocus ? 'Include detailed typography principles and usage guidelines' : 'Keep it practical and actionable'}.
+4. ${
+    depthFocus
+      ? "Include detailed typography principles and usage guidelines"
+      : "Keep it practical and actionable"
+  }.
 
 FONT REQUIREMENTS:
 - Industry: ${industryDesc}
@@ -1389,7 +1673,7 @@ FONT REQUIREMENTS:
 - Web-safe: Prioritize Google Fonts and system fonts
 - Pairing: Create harmonious combinations with clear hierarchy
 
-${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ''}
+${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ""}
 
 JSON STRUCTURE:
 {
@@ -1438,27 +1722,41 @@ JSON STRUCTURE:
   return aiPrompt;
 };
 
-const generateFontSuggestionsWithAI = async ({ prompt, industry, tone, usage, model = 'gemini-2.5-pro' }) => {
+const generateFontSuggestionsWithAI = async ({
+  prompt,
+  industry,
+  tone,
+  usage,
+  model = "gemini-2.5-pro",
+}) => {
   try {
     const aiPrompt = buildFontSuggestionsPrompt({
       industry,
       tone,
       usage,
       prompt,
-      model
+      model,
     });
 
     const geminiModel = genAI.getGenerativeModel({ model });
     const result = await geminiModel.generateContent(aiPrompt);
     let responseText = result.response.text();
-    
-    responseText = responseText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-    
+
+    responseText = responseText
+      .replace(/```json\s*/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
     try {
       const fonts = JSON.parse(responseText);
-      
+
       // Normalize and validate the font suggestions data
-      const normalizedFonts = normalizeFontSuggestions(fonts, industry, tone, usage);
+      const normalizedFonts = normalizeFontSuggestions(
+        fonts,
+        industry,
+        tone,
+        usage
+      );
       return normalizedFonts;
     } catch (parseError) {
       return generateDefaultFontSuggestions(industry, tone);
@@ -1474,258 +1772,915 @@ const normalizeFontSuggestions = (fonts, industry, tone, usage) => {
     industry: fonts.industry || industry,
     tone: fonts.tone || tone,
     usage: fonts.usage || usage,
-    combinations: Array.isArray(fonts.combinations) ? fonts.combinations.map(combo => ({
-      name: combo.name || 'Font Combination',
-      description: combo.description || 'Professional font combination',
-      heading: {
-        primary: combo.heading?.primary || 'Inter',
-        fallback: combo.heading?.fallback || 'Arial, sans-serif',
-        weight: combo.heading?.weight || '600',
-        size: combo.heading?.size || '2.5rem',
-        usage: combo.heading?.usage || 'Main headings, hero text'
-      },
-      body: {
-        primary: combo.body?.primary || 'Inter',
-        fallback: combo.body?.fallback || 'Arial, sans-serif',
-        weight: combo.body?.weight || '400',
-        size: combo.body?.size || '1rem',
-        usage: combo.body?.usage || 'Body text, paragraphs'
-      },
-      accent: {
-        primary: combo.accent?.primary || 'Inter',
-        fallback: combo.accent?.fallback || 'Arial, sans-serif',
-        weight: combo.accent?.weight || '500',
-        size: combo.accent?.size || '1.125rem',
-        usage: combo.accent?.usage || 'Subheadings, captions'
-      },
-      reasoning: combo.reasoning || 'Professional and readable combination',
-      bestFor: Array.isArray(combo.bestFor) ? combo.bestFor : ['General use'],
-      googleFonts: Array.isArray(combo.googleFonts) ? combo.googleFonts : [combo.heading?.primary || 'Inter'],
-      accessibility: combo.accessibility || 'Good contrast and readability'
-    })) : [],
+    combinations: Array.isArray(fonts.combinations)
+      ? fonts.combinations.map((combo) => ({
+          name: combo.name || "Font Combination",
+          description: combo.description || "Professional font combination",
+          heading: {
+            primary: combo.heading?.primary || "Inter",
+            fallback: combo.heading?.fallback || "Arial, sans-serif",
+            weight: combo.heading?.weight || "600",
+            size: combo.heading?.size || "2.5rem",
+            usage: combo.heading?.usage || "Main headings, hero text",
+          },
+          body: {
+            primary: combo.body?.primary || "Inter",
+            fallback: combo.body?.fallback || "Arial, sans-serif",
+            weight: combo.body?.weight || "400",
+            size: combo.body?.size || "1rem",
+            usage: combo.body?.usage || "Body text, paragraphs",
+          },
+          accent: {
+            primary: combo.accent?.primary || "Inter",
+            fallback: combo.accent?.fallback || "Arial, sans-serif",
+            weight: combo.accent?.weight || "500",
+            size: combo.accent?.size || "1.125rem",
+            usage: combo.accent?.usage || "Subheadings, captions",
+          },
+          reasoning: combo.reasoning || "Professional and readable combination",
+          bestFor: Array.isArray(combo.bestFor)
+            ? combo.bestFor
+            : ["General use"],
+          googleFonts: Array.isArray(combo.googleFonts)
+            ? combo.googleFonts
+            : [combo.heading?.primary || "Inter"],
+          accessibility: combo.accessibility || "Good contrast and readability",
+        }))
+      : [],
     principles: fonts.principles || {
-      contrast: 'Ensure sufficient contrast between text and background',
-      spacing: 'Use appropriate line height and letter spacing',
-      scaling: 'Implement responsive font sizing'
+      contrast: "Ensure sufficient contrast between text and background",
+      spacing: "Use appropriate line height and letter spacing",
+      scaling: "Implement responsive font sizing",
     },
-    tags: Array.isArray(fonts.tags) ? fonts.tags : [tone, industry, usage, 'accessible']
+    tags: Array.isArray(fonts.tags)
+      ? fonts.tags
+      : [tone, industry, usage, "accessible"],
   };
 
   return normalized;
 };
 
-// Enhanced UX Audit
+// Enhanced UX Audit with Image Analysis
 const buildUXAuditPrompt = (options = {}) => {
   const {
-    imageUrl = '',
-    description = '',
-    context = 'general web application',
-    focusAreas = ['all'],
-    model = 'gemini-2.5-pro'
+    imageUrl = "",
+    description = "",
+    context = "general web application",
+    focusAreas = ["all"],
+    model = "gemini-2.5-pro",
   } = options;
 
-  const depthFocus = model.includes('pro');
+  const depthFocus = model.includes("pro");
 
   const focusAreaGuidelines = {
-    accessibility: 'WCAG compliance, screen reader support, keyboard navigation, color contrast',
-    usability: 'User flow, navigation, information architecture, task completion',
-    visualDesign: 'Visual hierarchy, consistency, branding, aesthetics, layout',
-    performance: 'Loading speed, responsiveness, optimization, technical performance',
-    content: 'Clarity, readability, information density, content strategy',
-    engagement: 'User engagement, call-to-actions, conversion optimization',
-    mobile: 'Mobile responsiveness, touch interactions, mobile-specific UX',
-    all: 'Comprehensive analysis across all UX dimensions'
+    accessibility:
+      "WCAG compliance, screen reader support, keyboard navigation, color contrast, alt text, focus indicators",
+    usability:
+      "User flow, navigation, information architecture, task completion, user journey optimization",
+    visualDesign:
+      "Visual hierarchy, consistency, branding, aesthetics, layout, typography, color theory",
+    performance:
+      "Loading speed, responsiveness, optimization, technical performance, perceived performance",
+    content:
+      "Clarity, readability, information density, content strategy, microcopy, error messages",
+    engagement:
+      "User engagement, call-to-actions, conversion optimization, user retention strategies",
+    mobile:
+      "Mobile responsiveness, touch interactions, mobile-specific UX, gesture support",
+    all: "Comprehensive analysis across all UX dimensions with detailed insights",
   };
 
   const contextGuidelines = {
-    'general web application': 'Standard web application with typical user flows',
-    'e-commerce': 'Online shopping, product discovery, checkout process',
-    'landing page': 'Marketing page, lead generation, conversion focus',
-    'dashboard': 'Data visualization, admin interface, complex interactions',
-    'mobile app': 'Mobile-first design, touch interactions, app-specific patterns',
-    'portfolio': 'Creative showcase, visual presentation, personal branding',
-    'blog': 'Content consumption, reading experience, information architecture',
-    'saas': 'Software as a service, feature discovery, user onboarding'
+    "general web application":
+      "Standard web application with typical user flows and business requirements",
+    "e-commerce":
+      "Online shopping experience, product discovery, checkout process, conversion optimization",
+    "landing page":
+      "Marketing page, lead generation, conversion focus, first impressions",
+    dashboard:
+      "Data visualization, admin interface, complex interactions, information density",
+    "mobile app":
+      "Mobile-first design, touch interactions, app-specific patterns, native feel",
+    portfolio:
+      "Creative showcase, visual presentation, personal branding, storytelling",
+    blog: "Content consumption, reading experience, information architecture, engagement",
+    saas: "Software as a service, feature discovery, user onboarding, complex workflows",
   };
 
-  const focusDesc = focusAreas.map(area => focusAreaGuidelines[area] || area).join(', ');
-  const contextDesc = contextGuidelines[context] || contextGuidelines['general web application'];
+  const focusDesc = focusAreas
+    .map((area) => focusAreaGuidelines[area] || area)
+    .join(", ");
+  const contextDesc =
+    contextGuidelines[context] || contextGuidelines["general web application"];
 
   const aiPrompt = `
-You are a world-class UX researcher and design expert.
-Perform a comprehensive UX audit for a ${contextDesc}.
+You are a world-class Senior UX/UI Design Auditor with 15+ years of experience at top tech companies (Google, Apple, Airbnb). 
+You specialize in comprehensive design audits, accessibility compliance, conversion optimization, and design system architecture.
 
-RESPONSE RULES:
-1. Return ONLY valid JSON. No markdown, explanations, or code blocks.
-2. Provide specific, actionable recommendations with clear priorities.
-3. Include quantitative scores (0-100) for each category.
-4. ${depthFocus ? 'Include detailed analysis with specific examples and best practices' : 'Keep it concise but comprehensive'}.
+🎯 MISSION: Provide a surgical analysis of this design screenshot that rivals the best UX consultants in the industry.
 
-AUDIT REQUIREMENTS:
-- Context: ${contextDesc}
-- Focus Areas: ${focusDesc}
-- Image Analysis: ${imageUrl ? 'Analyze the provided image for visual design and layout issues' : 'No image provided'}
-- Description: ${description || 'No description provided'}
-- Scoring: Use 0-100 scale (90-100: Excellent, 70-89: Good, 50-69: Needs Improvement, 0-49: Poor)
+CONTEXT: ${contextDesc}
+FOCUS AREAS: ${focusDesc}
+DESCRIPTION: ${
+    description ||
+    "Analyze the provided design screenshot with expert precision"
+  }
 
-${imageUrl ? `IMAGE URL: ${imageUrl}` : ''}
+═══════════════════════════════════════════════════════════════════════════════
 
-JSON STRUCTURE:
+🔍 COMPREHENSIVE ANALYSIS FRAMEWORK:
+
+1. **EXECUTIVE SUMMARY ANALYSIS**
+   - Immediate visual impression and cognitive load assessment
+   - Primary user journey effectiveness 
+   - Business impact potential of current design
+   - Critical issues requiring immediate attention
+
+2. **DEEP UX PSYCHOLOGY ANALYSIS**
+   - Apply Fitts's Law for clickable element placement and sizing
+   - Hick's Law analysis for decision complexity
+   - Miller's Rule evaluation for information chunks
+   - Von Restorff Effect assessment for important elements
+   - Gestalt principles evaluation (proximity, similarity, closure, continuity)
+
+3. **ACCESSIBILITY EXCELLENCE (WCAG 2.1 AA+)**
+   - Color contrast ratios with exact measurements
+   - Keyboard navigation flow analysis
+   - Screen reader compatibility assessment
+   - Touch target sizing (minimum 44px rule)
+   - Focus indicator visibility and clarity
+   - Alt text quality for images
+   - Semantic HTML structure implications
+
+4. **EMOTIONAL DESIGN & BRAND PSYCHOLOGY**
+   - Emotional journey mapping through the interface
+   - Brand personality alignment assessment
+   - Color psychology impact on user behavior
+   - Typography emotional resonance
+   - Visual hierarchy supporting brand goals
+   - Trust signals and credibility indicators
+
+5. **CONVERSION OPTIMIZATION SCIENCE**
+   - CTA placement using F-pattern and Z-pattern analysis
+   - Form design friction points
+   - Social proof implementation effectiveness
+   - Urgency and scarcity principle application
+   - Cognitive bias utilization (anchoring, loss aversion, etc.)
+   - Conversion funnel optimization opportunities
+
+6. **DESIGN SYSTEM FORENSICS**
+   - Component consistency audit
+   - Spacing system adherence (8pt grid, golden ratio, etc.)
+   - Typography scale mathematical relationships
+   - Color palette systematic usage
+   - Icon style and semantic consistency
+   - Micro-interaction pattern alignment
+
+7. **RESPONSIVE UX SIMULATION**
+   - Mobile-first design principle adherence
+   - Breakpoint behavior predictions
+   - Touch interaction optimization
+   - Content prioritization across devices
+   - Performance implications of design choices
+
+8. **UX WRITING & MICROCOPY EXCELLENCE**
+   - Tone of voice consistency
+   - Clarity and scannability assessment
+   - Error message helpfulness
+   - CTA text persuasiveness
+   - Information hierarchy through content
+
+${
+  depthFocus
+    ? `
+🎓 EXPERT-LEVEL DEEP DIVE:
+- Provide exact pixel measurements and mathematical ratios
+- Reference specific design principles (Material Design 3.0, Apple HIG, Atomic Design)
+- Include accessibility audit with WCAG 2.1 AAA compliance checks
+- Analyze cognitive load using established UX research methodologies
+- Evaluate micro-interactions and motion design opportunities
+- Assess design system maturity and scalability
+- Include competitive analysis context
+- Provide data-driven insights with user research backing
+`
+    : `
+🎯 FOCUSED EXPERT ANALYSIS:
+- Highlight top 5 critical issues affecting user experience and business metrics
+- Provide laser-focused, actionable recommendations with ROI potential
+- Focus on high-impact improvements with implementation priorities
+- Include quick wins that can be implemented within 24-48 hours
+`
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 ENHANCED SCORING METHODOLOGY:
+- 95-100: Exceptional - Best-in-class, benchmark quality
+- 85-94: Excellent - Industry best practices, minimal issues
+- 70-84: Good - Solid foundation with optimization opportunities  
+- 55-69: Fair - Noticeable issues impacting user experience
+- 40-54: Poor - Significant problems requiring major improvements
+- 25-39: Critical - Fundamental flaws preventing effective use
+- 0-24: Broken - Complete redesign required
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🏗️ RESPONSE STRUCTURE - STRICT JSON FORMAT:
 {
-  "overallScore": 85,
-  "summary": "Brief overall assessment",
+  "executiveSummary": {
+    "overallScore": 85,
+    "immediateImpression": "First 3-second user impression analysis",
+    "businessImpact": "Potential revenue/conversion impact assessment",
+    "criticalIssuesCount": 3,
+    "timeToImplementFixes": "2-4 weeks"
+  },
+  "designAnalysis": {
+    "visualHierarchy": {
+      "score": 82,
+      "analysis": "Detailed hierarchy effectiveness with F/Z-pattern analysis",
+      "uxLawsApplied": ["Fitts's Law", "Hick's Law"],
+      "improvements": "Specific hierarchy enhancement recommendations"
+    },
+    "colorUsage": {
+      "score": 78,
+      "contrastRatios": {"primary": "4.5:1", "secondary": "3.2:1"},
+      "psychologyImpact": "Color psychology effect on user behavior",
+      "accessibilityScore": 85,
+      "improvements": "Color optimization recommendations"
+    },
+    "typography": {
+      "score": 80,
+      "readabilityScore": 88,
+      "hierarchyEffectiveness": 75,
+      "emotionalResonance": "Professional but approachable",
+      "improvements": "Typography enhancement suggestions"
+    },
+    "spacing": {
+      "score": 85,
+      "gridSystemCompliance": "8pt grid - 90% adherent",
+      "whitespaceEffectiveness": 82,
+      "mathematicalHarmony": "Golden ratio: 60% applied",
+      "improvements": "Spacing optimization recommendations"
+    },
+    "brandAlignment": {
+      "score": 88,
+      "personalityMatch": "85% aligned with intended brand personality",
+      "trustSignals": 4,
+      "emotionalJourney": "Positive → Confident → Engaged",
+      "improvements": "Brand strengthening opportunities"
+    }
+  },
+  "accessibilityAudit": {
+    "overallScore": 78,
+    "wcagCompliance": "AA - 85% | AAA - 60%",
+    "keyboardNavigation": {
+      "score": 82,
+      "tabOrder": "Logical flow maintained",
+      "focusIndicators": "Visible but could be enhanced",
+      "skipLinks": "Missing - critical accessibility gap"
+    },
+    "colorContrast": {
+      "score": 75,
+      "failures": [
+        {"element": "Secondary buttons", "ratio": "3.2:1", "required": "4.5:1", "wcagLevel": "AA"}
+      ],
+      "improvements": ["Darken secondary button text by 15%", "Add border for low-contrast elements"]
+    },
+    "screenReader": {
+      "score": 80,
+      "altTextQuality": "Good coverage, some descriptions could be more descriptive",
+      "semanticStructure": "H1-H6 hierarchy mostly correct",
+      "ariaLabels": "85% implementation",
+      "improvements": ["Add ARIA landmarks", "Enhance alt text descriptions"]
+    },
+    "codeSnippets": [
+      {"issue": "Low contrast buttons", "fix": "color: #2d3748; /* Increases contrast to 4.52:1 */"},
+      {"issue": "Missing skip link", "fix": "<a href='#main-content' class='sr-only'>Skip to main content</a>"}
+    ]
+  },
+  "usabilityAnalysis": {
+    "overallScore": 83,
+    "userFlowEfficiency": {
+      "score": 85,
+      "clicksToGoal": 3,
+      "cognitiveLoad": "Medium - could be reduced",
+      "errorPrevention": "Good form validation visible"
+    },
+    "navigationClarity": {
+      "score": 88,
+      "menuStructure": "Clear hierarchy, logical grouping",
+      "breadcrumbs": "Present and functional",
+      "searchability": "Search prominent and accessible"
+    },
+    "formUsability": {
+      "score": 75,
+      "fieldLabeling": "Clear but could use more contextual help",
+      "errorHandling": "Real-time validation present",
+      "completionRate": "Estimated 78% based on design patterns"
+    }
+  },
+  "conversionOptimization": {
+    "overallScore": 76,
+    "ctaEffectiveness": {
+      "score": 82,
+      "placement": "Above fold, good contrast",
+      "copyPersuasiveness": "Action-oriented but could be more specific",
+      "visualHierarchy": "Primary CTA stands out well"
+    },
+    "trustSignals": {
+      "score": 70,
+      "present": ["Customer reviews", "Security badges"],
+      "missing": ["Company logos", "Testimonials with photos"],
+      "improvements": "Add social proof and credibility indicators"
+    },
+    "urgencyScarcity": {
+      "score": 65,
+      "implementation": "Limited use of urgency",
+      "opportunities": ["Limited time offers", "Stock indicators", "Social proof counters"]
+    }
+  },
+  "responsiveDesign": {
+    "overallScore": 80,
+    "mobileFriendliness": {
+      "score": 85,
+      "touchTargets": "Most elements meet 44px minimum",
+      "contentPrioritization": "Good mobile hierarchy",
+      "gestureSupport": "Standard touch gestures supported"
+    },
+    "breakpointStrategy": {
+      "score": 75,
+      "implementation": "Good responsive behavior predicted",
+      "contentAdaptation": "Text and images scale appropriately",
+      "navigationCollapse": "Hamburger menu implementation needed"
+    }
+  },
+  "uxWriting": {
+    "overallScore": 82,
+    "clarity": {
+      "score": 85,
+      "scanability": "Good use of headings and bullet points",
+      "jargonLevel": "Appropriate for target audience",
+      "actionOriented": "Clear next steps provided"
+    },
+    "toneOfVoice": {
+      "score": 80,
+      "consistency": "Professional and friendly tone maintained",
+      "brandAlignment": "Matches intended brand personality",
+      "emotionalResonance": "Builds confidence and trust"
+    },
+    "microcopy": {
+      "score": 78,
+      "errorMessages": "Helpful but could be more specific",
+      "placeholderText": "Clear and instructive",
+      "buttonLabels": "Action-oriented, could be more specific"
+    }
+  },
+  "criticalIssues": [
+    {
+      "severity": "high",
+      "category": "accessibility",
+      "title": "Color Contrast Violations",
+      "description": "Secondary buttons fail WCAG AA contrast requirements (3.2:1 vs required 4.5:1)",
+      "businessImpact": "Potential legal compliance issues, 15% of users affected",
+      "uxLawViolated": "Weber's Law - insufficient perceptual difference",
+      "implementation": {
+        "effort": "Low (2 hours)",
+        "priority": "High",
+        "codeSnippet": ".btn-secondary { color: #2d3748; border: 1px solid #4a5568; }"
+      },
+      "wcagGuideline": "1.4.3 Contrast (Minimum)"
+    },
+    {
+      "severity": "medium",
+      "category": "conversion",
+      "title": "CTA Copy Lacks Specificity",
+      "description": "Primary CTA 'Learn More' is vague and doesn't indicate clear value",
+      "businessImpact": "Potential 12-18% conversion rate increase with specific copy",
+      "uxLawViolated": "Von Restorff Effect - CTA doesn't stand out meaningfully",
+      "implementation": {
+        "effort": "Low (1 hour)",
+        "priority": "Medium",
+        "suggestions": ["'Get Free Audit Report'", "'Start 14-Day Trial'", "'See Pricing Options'"]
+      }
+    }
+  ],
+  "quickWins": [
+    {
+      "title": "Increase Secondary Button Contrast",
+      "implementation": "Darken text color from #718096 to #2d3748",
+      "timeToImplement": "30 minutes",
+      "expectedImpact": "15% improvement in accessibility score",
+      "roiPotential": "High - legal compliance + better UX"
+    },
+    {
+      "title": "Add Skip Navigation Link",
+      "implementation": "Insert visually hidden skip link before main navigation",
+      "timeToImplement": "45 minutes",
+      "expectedImpact": "Significant accessibility improvement for keyboard users",
+      "roiPotential": "Medium - better accessibility compliance"
+    },
+    {
+      "title": "Enhance CTA Copy Specificity",
+      "implementation": "Change 'Learn More' to 'Get Free UX Audit Report'",
+      "timeToImplement": "15 minutes",
+      "expectedImpact": "12-18% potential conversion increase",
+      "roiPotential": "Very High - direct revenue impact"
+    }
+  ],
+  "implementationRoadmap": {
+    "phase1": {
+      "timeframe": "Week 1",
+      "priority": "Critical fixes",
+      "tasks": ["Fix color contrast", "Add skip links", "Improve CTA copy"],
+      "effort": "8 hours",
+      "expectedImpact": "25% overall UX score improvement"
+    },
+    "phase2": {
+      "timeframe": "Week 2-3", 
+      "priority": "Usability enhancements",
+      "tasks": ["Optimize form flow", "Add trust signals", "Improve microcopy"],
+      "effort": "20 hours",
+      "expectedImpact": "15% conversion rate improvement"
+    },
+    "phase3": {
+      "timeframe": "Week 4-6",
+      "priority": "Advanced optimizations",
+      "tasks": ["Responsive refinements", "Animation improvements", "A/B test setup"],
+      "effort": "40 hours",
+      "expectedImpact": "10% additional optimization"
+    }
+  },
+  "competitiveBenchmark": {
+    "industryPosition": "Above average - 78th percentile",
+    "strengthsVsCompetitors": ["Clean visual design", "Good mobile responsiveness"],
+    "gapsVsLeaders": ["Accessibility compliance", "Conversion optimization", "Trust signals"],
+    "opportunityAreas": ["Micro-interactions", "Personalization", "Social proof integration"]
+  },
+  "designSystemRecommendations": {
+    "componentLibrary": {
+      "score": 75,
+      "consistency": "Good foundation, some inconsistencies in spacing",
+      "scalability": "Components appear reusable with minor modifications",
+      "recommendations": ["Standardize spacing tokens", "Create button size variants", "Define color semantic tokens"]
+    },
+    "tokenSystem": {
+      "colors": "Primary palette strong, secondary could be expanded",
+      "typography": "Good scale, consider adding display sizes",
+      "spacing": "Implement 8pt grid more consistently",
+      "shadows": "Good depth system, consider adding more subtle variants"
+    }
+  },
+  "nextSteps": [
+    "Immediately fix critical accessibility issues (color contrast, skip links)",
+    "A/B test new CTA copy variations to validate conversion improvements",
+    "Implement quick wins within 48 hours for immediate UX improvements",
+    "Schedule usability testing with 5-8 users to validate design decisions",
+    "Set up conversion tracking to measure impact of improvements",
+    "Plan Phase 2 enhancements based on initial fix performance data"
+  ],
   "categories": {
     "accessibility": {
-      "score": 80,
+      "score": 78,
       "issues": [
         {
-          "type": "error|warning|info",
-          "title": "Issue title",
-          "description": "Detailed description",
-          "severity": "high|medium|low",
-          "suggestion": "Specific recommendation",
-          "priority": "high|medium|low"
+          "type": "error",
+          "title": "Color Contrast Violations",
+          "description": "Secondary buttons fail WCAG AA requirements (3.2:1 vs required 4.5:1)",
+          "severity": "high",
+          "suggestion": "Darken button text color to #2d3748 for compliance",
+          "priority": "high"
+        },
+        {
+          "type": "warning", 
+          "title": "Missing Skip Navigation",
+          "description": "No skip links present for keyboard navigation users",
+          "severity": "medium",
+          "suggestion": "Add visually hidden skip link before main navigation",
+          "priority": "medium"
         }
       ]
     },
     "usability": {
-      "score": 85,
-      "issues": []
+      "score": 83,
+      "issues": [
+        {
+          "type": "warning",
+          "title": "Form Field Context",
+          "description": "Some form fields lack helpful context or examples",
+          "severity": "medium", 
+          "suggestion": "Add placeholder text and help icons with tooltips",
+          "priority": "medium"
+        }
+      ]
     },
     "visualDesign": {
-      "score": 90,
-      "issues": []
+      "score": 85,
+      "issues": [
+        {
+          "type": "info",
+          "title": "Typography Hierarchy",
+          "description": "H2 and H3 headings could have more distinct sizing",
+          "severity": "low",
+          "suggestion": "Increase size difference between heading levels by 4-6px",
+          "priority": "low"
+        }
+      ]
     },
     "performance": {
-      "score": 75,
-      "issues": []
+      "score": 80,
+      "issues": [
+        {
+          "type": "warning",
+          "title": "Image Optimization",
+          "description": "Hero images appear unoptimized for web delivery",
+          "severity": "medium",
+          "suggestion": "Implement WebP format and responsive image loading",
+          "priority": "medium"
+        }
+      ]
     },
     "content": {
-      "score": 80,
-      "issues": []
+      "score": 82,
+      "issues": [
+        {
+          "type": "info",
+          "title": "CTA Copy Specificity",
+          "description": "'Learn More' CTA is vague and non-actionable",
+          "severity": "medium",
+          "suggestion": "Use specific action words like 'Get Free Audit' or 'Start Trial'",
+          "priority": "medium"
+        }
+      ]
     },
     "engagement": {
-      "score": 85,
-      "issues": []
+      "score": 78,
+      "issues": [
+        {
+          "type": "info",
+          "title": "Social Proof Elements",
+          "description": "Limited trust signals and social proof visible",
+          "severity": "low",
+          "suggestion": "Add customer testimonials, logos, or review counts",
+          "priority": "low"
+        }
+      ]
     }
   },
-  "recommendations": [
-    {
-      "priority": "high|medium|low",
-      "category": "accessibility|usability|visualDesign|performance|content|engagement",
-      "title": "Recommendation title",
-      "description": "Detailed recommendation",
-      "impact": "Expected impact on user experience",
-      "effort": "Implementation effort required"
-    }
-  ],
-  "strengths": [
-    "What's working well",
-    "Positive aspects to maintain"
-  ],
-  "quickWins": [
-    "Easy improvements with high impact"
-  ],
-  "nextSteps": [
-    "Immediate actions to take",
-    "Follow-up items"
-  ],
-  "tags": ["${context}", "ux-audit", "recommendations"]
-}`;
+  "tags": ["${context}", "comprehensive-audit", "accessibility-focused", "conversion-optimized", "implementation-ready"]
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 CRITICAL SUCCESS FACTORS:
+- Provide specific, measurable feedback with exact numbers (e.g., "Increase button size to 44px for WCAG compliance")
+- Reference exact UI elements visible in the screenshot with precise descriptions
+- Include both immediate tactical fixes AND strategic long-term improvements
+- Ground all recommendations in established UX research and psychological principles
+- Consider the complete user journey from awareness to conversion to retention
+- Ensure every recommendation includes implementation difficulty and expected impact
+- Provide ready-to-use code snippets for developers where applicable
+- **IMPORTANT**: The "categories" section MUST contain specific issues for each category. Never leave issues arrays empty. Always find at least 1-2 actionable improvements per category, even if minor.
+
+DELIVER A WORLD-CLASS UX AUDIT THAT EXCEEDS INDUSTRY STANDARDS.`;
 
   return aiPrompt;
 };
 
-const performUXAuditWithAI = async ({ imageUrl, description, context, focusAreas, model = 'gemini-2.5-pro' }) => {
+const performUXAuditWithAI = async ({
+  imageUrl,
+  imageBuffer,
+  description,
+  context,
+  focusAreas,
+  model = process.env.GEMINI_MODEL || "gemini-2.5-pro",
+}) => {
   try {
     const aiPrompt = buildUXAuditPrompt({
       imageUrl,
       description,
       context,
       focusAreas,
-      model
+      model,
     });
 
-    const geminiModel = genAI.getGenerativeModel({ model });
-    const result = await geminiModel.generateContent(aiPrompt);
+    // Log the complete prompt being sent to Gemini
+    console.log("=".repeat(80));
+    console.log("📝 COMPLETE PROMPT SENT TO GEMINI:");
+    console.log("=".repeat(80));
+    console.log(aiPrompt);
+    console.log("=".repeat(80));
+    console.log("🔧 PROMPT CONFIGURATION:");
+    console.log({
+      context,
+      focusAreas,
+      hasDescription: !!description,
+      descriptionLength: description?.length || 0,
+      model,
+      hasImageUrl: !!imageUrl,
+      hasImageBuffer: !!imageBuffer,
+    });
+    console.log("=".repeat(80));
+
+    const geminiModel = genAI.getGenerativeModel({
+      model,
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    let result;
+
+    // If we have an image, use vision capabilities
+    if (imageBuffer) {
+      // Get the image MIME type from buffer
+      const getMimeType = (buffer) => {
+        const signature = buffer.toString("hex", 0, 4);
+        if (signature === "89504e47") return "image/png";
+        if (signature.startsWith("ffd8")) return "image/jpeg";
+        if (signature.startsWith("47494638")) return "image/gif";
+        if (signature.startsWith("52494646")) return "image/webp";
+        return "image/jpeg"; // Default fallback
+      };
+
+      const mimeType = getMimeType(imageBuffer);
+
+      const prompt = [
+        {
+          text: aiPrompt,
+        },
+        {
+          inlineData: {
+            data: imageBuffer.toString("base64"),
+            mimeType: mimeType,
+          },
+        },
+      ];
+
+      console.log("Sending image analysis request to Gemini...", {
+        model,
+        mimeType,
+        bufferSize: imageBuffer.length,
+        hasPrompt: !!aiPrompt,
+      });
+
+      result = await geminiModel.generateContent(prompt);
+    } else {
+      // Text-only analysis
+      console.log("Sending text-only analysis request to Gemini...", {
+        model,
+        hasDescription: !!description,
+        context,
+        focusAreas,
+      });
+
+      result = await geminiModel.generateContent(aiPrompt);
+    }
+
+    if (!result || !result.response) {
+      throw new Error("No response received from AI model");
+    }
+
     let responseText = result.response.text();
-    
-    responseText = responseText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-    
+
+    // Log the complete raw response from Gemini
+    console.log("=".repeat(80));
+    console.log("📥 COMPLETE RAW RESPONSE FROM GEMINI:");
+    console.log("=".repeat(80));
+    console.log(responseText);
+    console.log("=".repeat(80));
+    console.log("📊 RESPONSE METADATA:");
+    console.log({
+      responseLength: responseText.length,
+      startsWithBrace: responseText.startsWith("{"),
+      startsWithMarkdown: responseText.startsWith("```"),
+      containsJson: responseText.includes('"overallScore"'),
+      responseType: typeof responseText,
+    });
+    console.log("=".repeat(80));
+
+    // Clean up the response
+    responseText = responseText
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .replace(/^```json$/gm, "")
+      .replace(/^```$/gm, "")
+      .trim();
+
+    console.log("📝 CLEANED RESPONSE (after removing markdown):");
+    console.log("=".repeat(80));
+    console.log(responseText);
+    console.log("=".repeat(80));
+
+    console.log("Received response from Gemini, parsing...", {
+      responseLength: responseText.length,
+      startsWithBrace: responseText.startsWith("{"),
+    });
+
     try {
       const audit = JSON.parse(responseText);
-      
+
+      // Log the parsed JSON object
+      console.log("✅ SUCCESSFULLY PARSED JSON FROM GEMINI:");
+      console.log("=".repeat(80));
+      console.log(JSON.stringify(audit, null, 2));
+      console.log("=".repeat(80));
+
       // Normalize and validate the audit data
       const normalizedAudit = normalizeUXAudit(audit, context, focusAreas);
+
+      console.log("📋 FINAL NORMALIZED AUDIT RESULT:", {
+        overallScore: normalizedAudit.overallScore,
+        categoriesCount: Object.keys(normalizedAudit.categories || {}).length,
+        recommendationsCount: (normalizedAudit.recommendations || []).length,
+        hasDesignAnalysis: !!normalizedAudit.designAnalysis,
+        hasStrengths: (normalizedAudit.strengths || []).length,
+        hasQuickWins: (normalizedAudit.quickWins || []).length,
+      });
+
       return normalizedAudit;
     } catch (parseError) {
-      return generateDefaultUXAudit();
+      console.log("❌ JSON PARSING ERROR:");
+      console.log("=".repeat(80));
+      console.error("JSON parsing error:", parseError.message);
+      console.log("Raw response (first 1000 chars):");
+      console.log(responseText.substring(0, 1000));
+      console.log("=".repeat(80));
+
+      // Try to extract JSON from response if it's wrapped in other text
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log("🔄 ATTEMPTING TO EXTRACT JSON FROM RESPONSE:");
+        console.log(
+          "Extracted JSON candidate:",
+          jsonMatch[0].substring(0, 200) + "..."
+        );
+        try {
+          const audit = JSON.parse(jsonMatch[0]);
+          console.log("✅ SUCCESSFULLY EXTRACTED AND PARSED JSON");
+          console.log(
+            "Extracted audit object:",
+            JSON.stringify(audit, null, 2)
+          );
+          const normalizedAudit = normalizeUXAudit(audit, context, focusAreas);
+          return normalizedAudit;
+        } catch (secondParseError) {
+          console.error(
+            "❌ Second JSON parsing failed:",
+            secondParseError.message
+          );
+        }
+      }
+
+      console.log("⚠️ Falling back to default audit with context");
+      return generateDefaultUXAuditWithContext(
+        context,
+        focusAreas,
+        description
+      );
     }
   } catch (error) {
-    return generateDefaultUXAudit();
+    console.error("UX Audit AI Error:", error);
+    console.log("Error details:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 200),
+    });
+
+    return generateDefaultUXAuditWithContext(context, focusAreas, description);
   }
 };
 
 // Helper function to normalize UX audit data
 const normalizeUXAudit = (audit, context, focusAreas) => {
   const safeScore = (score, defaultScore = 75) => {
-    const numScore = typeof score === 'number' ? score : parseInt(score) || defaultScore;
+    const numScore =
+      typeof score === "number" ? score : parseInt(score) || defaultScore;
     return Math.max(0, Math.min(100, numScore));
   };
 
   const safeIssues = (issues) => {
     if (!Array.isArray(issues)) return [];
-    return issues.map(issue => ({
-      type: issue.type || 'info',
-      title: issue.title || 'Issue',
-      description: issue.description || '',
-      severity: issue.severity || 'low',
-      suggestion: issue.suggestion || '',
-      priority: issue.priority || 'low'
+    return issues.map((issue) => ({
+      type: issue.type || "info",
+      title: issue.title || "Issue",
+      description: issue.description || "",
+      severity: issue.severity || "low",
+      suggestion: issue.suggestion || "",
+      priority: issue.priority || "low",
     }));
   };
 
+  const safeQuickWins = (quickWins) => {
+    if (!Array.isArray(quickWins)) return ["Improve contrast ratios"];
+    return quickWins.map((quickWin) => {
+      // Handle both string and object formats for backward compatibility
+      if (typeof quickWin === "string") {
+        return quickWin;
+      }
+      // Handle enhanced object format
+      return {
+        title: quickWin.title || "Quick Win",
+        implementation: quickWin.implementation || "",
+        timeToImplement: quickWin.timeToImplement || "Unknown",
+        expectedImpact: quickWin.expectedImpact || "Positive impact",
+        roiPotential: quickWin.roiPotential || "Medium",
+      };
+    });
+  };
+
+  const safeCriticalIssues = (criticalIssues) => {
+    if (!Array.isArray(criticalIssues)) return [];
+    return criticalIssues.map((issue) => {
+      // Handle both string and object formats for backward compatibility
+      if (typeof issue === "string") {
+        return issue;
+      }
+      // Handle enhanced object format
+      return {
+        severity: issue.severity || "medium",
+        category: issue.category || "general",
+        title: issue.title || "Critical Issue",
+        description: issue.description || "",
+        businessImpact: issue.businessImpact || "",
+        uxLawViolated: issue.uxLawViolated || "",
+        implementation: issue.implementation || {},
+        wcagGuideline: issue.wcagGuideline || "",
+      };
+    });
+  };
+
   const normalized = {
-    overallScore: safeScore(audit.overallScore, 75),
-    summary: audit.summary || 'UX audit completed',
+    // Use executiveSummary overallScore if available, otherwise fallback to direct overallScore
+    overallScore: safeScore(
+      audit?.executiveSummary?.overallScore || audit.overallScore,
+      75
+    ),
+    summary:
+      audit?.executiveSummary?.immediateImpression ||
+      audit.summary ||
+      "UX audit completed",
+
+    // Include executive summary if present
+    executiveSummary: audit.executiveSummary || null,
+
+    // Include enhanced analysis sections
+    designAnalysis: audit.designAnalysis || null,
+    accessibilityAudit: audit.accessibilityAudit || null,
+    usabilityAnalysis: audit.usabilityAnalysis || null,
+    conversionOptimization: audit.conversionOptimization || null,
+    responsiveDesign: audit.responsiveDesign || null,
+    uxWriting: audit.uxWriting || null,
+
     categories: {
       accessibility: {
         score: safeScore(audit.categories?.accessibility?.score, 70),
-        issues: safeIssues(audit.categories?.accessibility?.issues)
+        issues: safeIssues(audit.categories?.accessibility?.issues),
       },
       usability: {
         score: safeScore(audit.categories?.usability?.score, 75),
-        issues: safeIssues(audit.categories?.usability?.issues)
+        issues: safeIssues(audit.categories?.usability?.issues),
       },
       visualDesign: {
         score: safeScore(audit.categories?.visualDesign?.score, 80),
-        issues: safeIssues(audit.categories?.visualDesign?.issues)
+        issues: safeIssues(audit.categories?.visualDesign?.issues),
       },
       performance: {
         score: safeScore(audit.categories?.performance?.score, 75),
-        issues: safeIssues(audit.categories?.performance?.issues)
+        issues: safeIssues(audit.categories?.performance?.issues),
       },
       content: {
         score: safeScore(audit.categories?.content?.score, 80),
-        issues: safeIssues(audit.categories?.content?.issues)
+        issues: safeIssues(audit.categories?.content?.issues),
       },
       engagement: {
         score: safeScore(audit.categories?.engagement?.score, 75),
-        issues: safeIssues(audit.categories?.engagement?.issues)
-      }
+        issues: safeIssues(audit.categories?.engagement?.issues),
+      },
     },
-    recommendations: Array.isArray(audit.recommendations) ? audit.recommendations.map(rec => ({
-      priority: rec.priority || 'medium',
-      category: rec.category || 'general',
-      title: rec.title || 'Recommendation',
-      description: rec.description || '',
-      impact: rec.impact || 'Medium impact',
-      effort: rec.effort || 'Medium effort'
-    })) : [],
-    strengths: Array.isArray(audit.strengths) ? audit.strengths : ['Good overall design'],
-    quickWins: Array.isArray(audit.quickWins) ? audit.quickWins : ['Improve contrast ratios'],
-    nextSteps: Array.isArray(audit.nextSteps) ? audit.nextSteps : ['Implement recommendations'],
-    tags: Array.isArray(audit.tags) ? audit.tags : [context, 'ux-audit', 'recommendations']
+    recommendations: Array.isArray(audit.recommendations)
+      ? audit.recommendations.map((rec) => ({
+          priority: rec.priority || "medium",
+          category: rec.category || "general",
+          title: rec.title || "Recommendation",
+          description: rec.description || "",
+          impact: rec.impact || "Medium impact",
+          effort: rec.effort || "Medium effort",
+        }))
+      : [],
+    strengths: Array.isArray(audit.strengths)
+      ? audit.strengths
+      : ["Good overall design"],
+    quickWins: safeQuickWins(audit.quickWins),
+    criticalIssues: safeCriticalIssues(audit.criticalIssues),
+    implementationRoadmap: audit.implementationRoadmap || null,
+    competitiveBenchmark: audit.competitiveBenchmark || null,
+    designSystemRecommendations: audit.designSystemRecommendations || null,
+    nextSteps: Array.isArray(audit.nextSteps)
+      ? audit.nextSteps
+      : ["Implement recommendations"],
+    tags: Array.isArray(audit.tags)
+      ? audit.tags
+      : [context, "ux-audit", "recommendations"],
   };
 
   return normalized;
@@ -1736,34 +2691,156 @@ const generateDefaultColorPalette = (mood, industry) => ({
   name: `${mood} ${industry} Palette`,
   description: `A ${mood} color palette for ${industry} applications`,
   colors: {
-    primary: { hex: '#3B82F6', rgb: { r: 59, g: 130, b: 246 }, hsl: { h: 217, s: 91, l: 60 } },
-    secondary: { hex: '#64748B', rgb: { r: 100, g: 116, b: 139 }, hsl: { h: 215, s: 16, l: 47 } },
-    accent: { hex: '#F59E0B', rgb: { r: 245, g: 158, b: 11 }, hsl: { h: 43, s: 92, l: 50 } },
-    background: { hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 }, hsl: { h: 0, s: 0, l: 100 } },
-    text: { hex: '#1F2937', rgb: { r: 31, g: 41, b: 55 }, hsl: { h: 220, s: 26, l: 17 } }
-  }
+    primary: {
+      hex: "#3B82F6",
+      rgb: { r: 59, g: 130, b: 246 },
+      hsl: { h: 217, s: 91, l: 60 },
+    },
+    secondary: {
+      hex: "#64748B",
+      rgb: { r: 100, g: 116, b: 139 },
+      hsl: { h: 215, s: 16, l: 47 },
+    },
+    accent: {
+      hex: "#F59E0B",
+      rgb: { r: 245, g: 158, b: 11 },
+      hsl: { h: 43, s: 92, l: 50 },
+    },
+    background: {
+      hex: "#FFFFFF",
+      rgb: { r: 255, g: 255, b: 255 },
+      hsl: { h: 0, s: 0, l: 100 },
+    },
+    text: {
+      hex: "#1F2937",
+      rgb: { r: 31, g: 41, b: 55 },
+      hsl: { h: 220, s: 26, l: 17 },
+    },
+  },
 });
 
 const generateDefaultFontSuggestions = (industry, tone) => ({
-  heading: { primary: 'Inter', secondary: 'Poppins', accent: 'Playfair Display' },
-  body: { primary: 'Inter', secondary: 'Open Sans', accent: 'Source Sans Pro' },
-  display: { primary: 'Montserrat', secondary: 'Roboto', accent: 'Lora' }
+  heading: {
+    primary: "Inter",
+    secondary: "Poppins",
+    accent: "Playfair Display",
+  },
+  body: { primary: "Inter", secondary: "Open Sans", accent: "Source Sans Pro" },
+  display: { primary: "Montserrat", secondary: "Roboto", accent: "Lora" },
 });
 
 const generateDefaultUXAudit = () => ({
   overallScore: 75,
-  scores: {
-    usability: 80,
-    accessibility: 70,
-    performance: 75,
-    design: 80
+  summary: "AI analysis not available - showing baseline assessment",
+  categories: {
+    accessibility: {
+      score: 70,
+      issues: [
+        {
+          type: "warning",
+          title: "Color Contrast Check Needed",
+          description: "Verify color contrast ratios meet WCAG AA standards",
+          severity: "medium",
+          suggestion:
+            "Use a contrast checker tool to validate all text/background combinations",
+          priority: "medium",
+        },
+      ],
+    },
+    usability: {
+      score: 75,
+      issues: [
+        {
+          type: "info",
+          title: "Navigation Assessment",
+          description: "Review navigation structure and user flow",
+          severity: "low",
+          suggestion: "Conduct user testing to validate navigation patterns",
+          priority: "low",
+        },
+      ],
+    },
+    visualDesign: {
+      score: 80,
+      issues: [],
+    },
+    performance: {
+      score: 75,
+      issues: [],
+    },
   },
   recommendations: [
-    'Improve color contrast for better accessibility',
-    'Add more whitespace for better readability',
-    'Optimize images for faster loading'
-  ]
+    {
+      priority: "high",
+      category: "accessibility",
+      title: "Improve Color Contrast",
+      description: "Ensure all text meets WCAG color contrast requirements",
+      impact: "Better accessibility for users with visual impairments",
+      effort: "Low - CSS color adjustments",
+    },
+  ],
+  strengths: ["Clean visual design", "Consistent layout structure"],
+  quickWins: ["Optimize color contrast", "Add focus indicators"],
+  nextSteps: ["Conduct accessibility audit", "User testing"],
 });
+
+const generateDefaultUXAuditWithContext = (
+  context,
+  focusAreas,
+  description
+) => {
+  const baseAudit = generateDefaultUXAudit();
+
+  // Customize based on context
+  const contextSpecificIssues = {
+    "e-commerce": [
+      {
+        type: "warning",
+        title: "Product Page Optimization",
+        description:
+          "Review product information architecture and checkout flow",
+        severity: "high",
+        suggestion: "Simplify checkout process and improve product discovery",
+        priority: "high",
+      },
+    ],
+    "landing page": [
+      {
+        type: "info",
+        title: "Call-to-Action Optimization",
+        description: "Evaluate CTA placement and messaging effectiveness",
+        severity: "medium",
+        suggestion: "A/B test different CTA designs and positions",
+        priority: "high",
+      },
+    ],
+    dashboard: [
+      {
+        type: "warning",
+        title: "Information Density",
+        description: "Assess data visualization and information hierarchy",
+        severity: "medium",
+        suggestion: "Group related information and use progressive disclosure",
+        priority: "medium",
+      },
+    ],
+  };
+
+  if (contextSpecificIssues[context]) {
+    baseAudit.categories.usability.issues.push(
+      ...contextSpecificIssues[context]
+    );
+  }
+
+  if (description) {
+    baseAudit.summary = `Based on description: "${description.substring(
+      0,
+      100
+    )}..." - AI analysis not available, showing baseline assessment`;
+  }
+
+  return baseAudit;
+};
 
 module.exports = {
   buildPrompt,
@@ -1775,5 +2852,5 @@ module.exports = {
   buildUXAuditPrompt,
   performUXAuditWithAI,
   analyzeBrand,
-  generateSite
+  generateSite,
 };
