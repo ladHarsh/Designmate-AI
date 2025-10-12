@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
-import { fontAPI, apiUtils } from '../services/api';
-import { motion } from 'framer-motion';
-import { 
-  DocumentTextIcon, 
-  MagnifyingGlassIcon, 
+import React, { useState } from "react";
+import { fontAPI, apiUtils } from "../services/api";
+import { motion } from "framer-motion";
+import {
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
   HeartIcon,
   ShareIcon,
   ArrowDownTrayIcon,
   ArrowPathIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 
 const FontSuggestions = () => {
   const [formData, setFormData] = useState({
-    projectType: '',
-    industry: '',
-    tone: '',
-    targetAudience: '',
-    description: '',
-    includePairings: true
+    projectType: "",
+    industry: "",
+    tone: "",
+    targetAudience: "",
+    description: "",
+    includePairings: true,
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,25 +26,48 @@ const FontSuggestions = () => {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
 
   const projectTypes = [
-    'Website', 'Mobile App', 'Logo', 'Print Design', 'Brand Identity',
-    'Marketing Materials', 'UI/UX Design', 'Typography', 'Editorial'
+    "Website",
+    "Mobile App",
+    "Logo",
+    "Print Design",
+    "Brand Identity",
+    "Marketing Materials",
+    "UI/UX Design",
+    "Typography",
+    "Editorial",
   ];
 
   const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Education', 'Retail',
-    'Entertainment', 'Travel', 'Food & Beverage', 'Fashion', 'Real Estate'
+    "Technology",
+    "Healthcare",
+    "Finance",
+    "Education",
+    "Retail",
+    "Entertainment",
+    "Travel",
+    "Food & Beverage",
+    "Fashion",
+    "Real Estate",
   ];
 
   const tones = [
-    'Professional', 'Friendly', 'Luxury', 'Playful', 'Serious',
-    'Modern', 'Classic', 'Bold', 'Elegant', 'Casual'
+    "Professional",
+    "Friendly",
+    "Luxury",
+    "Playful",
+    "Serious",
+    "Modern",
+    "Classic",
+    "Bold",
+    "Elegant",
+    "Casual",
   ];
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -53,88 +76,98 @@ const FontSuggestions = () => {
     try {
       const normalizeIndustry = (i) => {
         const map = {
-          Technology: 'technology',
-          Healthcare: 'healthcare',
-          Finance: 'finance',
-          Education: 'education',
-          Retail: 'retail',
-          'Food & Beverage': 'food',
-          Travel: 'travel',
-          Fashion: 'fashion',
-          Entertainment: 'entertainment',
-          'Real Estate': 'other'
+          Technology: "technology",
+          Healthcare: "healthcare",
+          Finance: "finance",
+          Education: "education",
+          Retail: "retail",
+          "Food & Beverage": "food",
+          Travel: "travel",
+          Fashion: "fashion",
+          Entertainment: "entertainment",
+          "Real Estate": "other",
         };
-        return map[i] || 'other';
+        return map[i] || "other";
       };
 
-      const normalizeTone = (t) => (t ? t.toLowerCase() : 'professional');
+      const normalizeTone = (t) => (t ? t.toLowerCase() : "professional");
 
       const usageFromProjectType = (p) => {
         const map = {
-          Website: 'web',
-          'Mobile App': 'mobile',
-          'Print Design': 'print',
-          'Brand Identity': 'branding',
-          Logo: 'branding',
-          'Marketing Materials': 'print',
-          'UI/UX Design': 'web',
-          Typography: 'web',
-          Editorial: 'print'
+          Website: "web",
+          "Mobile App": "mobile",
+          "Print Design": "print",
+          "Brand Identity": "branding",
+          Logo: "branding",
+          "Marketing Materials": "print",
+          "UI/UX Design": "web",
+          Typography: "web",
+          Editorial: "print",
         };
-        return map[p] || 'web';
+        return map[p] || "web";
       };
 
       const promptLines = [
-        `Suggest 3-5 font recommendations${formData.includePairings ? ' with pairings' : ''} for a ${formData.projectType || 'design'} project.`,
-        `Industry: ${formData.industry || 'general'}.`,
-        `Tone: ${formData.tone || 'Professional'}.`,
-        `Target audience: ${formData.targetAudience || 'general'}.`,
-        `Description: ${formData.description || 'N/A'}.`,
-        'Return a JSON array of suggestions with fields: name, description, primaryFont{name,category,weight,url}, secondaryFont{name,category,weight,url}, usage{headings,body,accents}, score(0-10), tags[array of strings].'
+        `Suggest 3-5 font recommendations${
+          formData.includePairings ? " with pairings" : ""
+        } for a ${formData.projectType || "design"} project.`,
+        `Industry: ${formData.industry || "general"}.`,
+        `Tone: ${formData.tone || "Professional"}.`,
+        `Target audience: ${formData.targetAudience || "general"}.`,
+        `Description: ${formData.description || "N/A"}.`,
+        "Return a JSON array of suggestions with fields: name, description, primaryFont{name,category,weight,url}, secondaryFont{name,category,weight,url}, usage{headings,body,accents}, score(0-10), tags[array of strings].",
       ];
-      const prompt = promptLines.join('\n');
+      const prompt = promptLines.join("\n");
 
       const { data } = await fontAPI.suggest({
         prompt,
         industry: normalizeIndustry(formData.industry),
         tone: normalizeTone(formData.tone),
-        usage: usageFromProjectType(formData.projectType)
+        usage: usageFromProjectType(formData.projectType),
       });
 
       const raw = data?.data?.suggestions;
 
-      const coerceToArray = (val) => (Array.isArray(val) ? val : val ? [val] : []);
-      const safeStr = (s, d = '') => (typeof s === 'string' && s.length ? s : d);
+      const coerceToArray = (val) =>
+        Array.isArray(val) ? val : val ? [val] : [];
+      const safeStr = (s, d = "") =>
+        typeof s === "string" && s.length ? s : d;
 
       const normalized = coerceToArray(raw).map((s, idx) => ({
         id: s.id || `${Date.now()}-${idx}`,
-        name: safeStr(s.name, 'Font Recommendation'),
-        description: safeStr(s.description, 'AI suggested typography based on your inputs'),
+        name: safeStr(s.name, "Font Recommendation"),
+        description: safeStr(
+          s.description,
+          "AI suggested typography based on your inputs"
+        ),
         primaryFont: s.primaryFont || {
-          name: 'Inter',
-          category: 'Sans-serif',
-          weight: '400, 500, 600, 700',
-          url: 'https://fonts.google.com/specimen/Inter'
+          name: "Inter",
+          category: "Sans-serif",
+          weight: "400, 500, 600, 700",
+          url: "https://fonts.google.com/specimen/Inter",
         },
         secondaryFont: s.secondaryFont || {
-          name: 'Source Serif Pro',
-          category: 'Serif',
-          weight: '400, 600',
-          url: 'https://fonts.google.com/specimen/Source+Serif+Pro'
+          name: "Source Serif Pro",
+          category: "Serif",
+          weight: "400, 600",
+          url: "https://fonts.google.com/specimen/Source+Serif+Pro",
         },
         usage: s.usage || {
-          headings: 'Inter (600, 700)',
-          body: 'Inter (400, 500)',
-          accents: 'Source Serif Pro (400, 600)'
+          headings: "Inter (600, 700)",
+          body: "Inter (400, 500)",
+          accents: "Source Serif Pro (400, 600)",
         },
-        score: typeof s.score === 'number' ? s.score : 8.5,
-        tags: Array.isArray(s.tags) && s.tags.length ? s.tags : [formData.tone || 'Professional', formData.industry || 'General']
+        score: typeof s.score === "number" ? s.score : 8.5,
+        tags:
+          Array.isArray(s.tags) && s.tags.length
+            ? s.tags
+            : [formData.tone || "Professional", formData.industry || "General"],
       }));
 
       setGeneratedSuggestions(normalized);
     } catch (error) {
       const message = apiUtils.handleError(error);
-      console.error('Error generating suggestions:', message);
+      console.error("Error generating suggestions:", message);
       alert(message);
     } finally {
       setIsGenerating(false);
@@ -142,9 +175,9 @@ const FontSuggestions = () => {
   };
 
   const likeSuggestion = (suggestionId) => {
-    setGeneratedSuggestions(prev => 
-      prev.map(suggestion => 
-        suggestion.id === suggestionId 
+    setGeneratedSuggestions((prev) =>
+      prev.map((suggestion) =>
+        suggestion.id === suggestionId
           ? { ...suggestion, liked: !suggestion.liked }
           : suggestion
       )
@@ -155,19 +188,19 @@ const FontSuggestions = () => {
     <div className="bg-gray-50 rounded-lg p-4">
       <h4 className="text-sm font-medium text-gray-700 mb-2">{label}</h4>
       <div className="space-y-2">
-        <div 
+        <div
           className="text-2xl font-bold"
           style={{ fontFamily: font.name, fontWeight: 700 }}
         >
           {font.name}
         </div>
-        <div 
+        <div
           className="text-lg"
           style={{ fontFamily: font.name, fontWeight: 500 }}
         >
           The quick brown fox jumps over the lazy dog
         </div>
-        <div 
+        <div
           className="text-sm text-gray-600"
           style={{ fontFamily: font.name, fontWeight: 400 }}
         >
@@ -188,11 +221,14 @@ const FontSuggestions = () => {
         >
           <div className="flex items-center justify-center mb-4">
             <DocumentTextIcon className="h-8 w-8 text-purple-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">Font Suggestions</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Font Suggestions
+            </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Get intelligent font recommendations and perfect typography pairings. 
-            Our AI analyzes your project requirements to suggest fonts that enhance readability and brand appeal.
+            Get intelligent font recommendations and perfect typography
+            pairings. Our AI analyzes your project requirements to suggest fonts
+            that enhance readability and brand appeal.
           </p>
         </motion.div>
 
@@ -204,8 +240,10 @@ const FontSuggestions = () => {
             className="lg:col-span-1"
           >
             <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Project Details</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Project Details
+              </h2>
+
               <form className="space-y-6">
                 {/* Project Type */}
                 <div>
@@ -219,8 +257,10 @@ const FontSuggestions = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Select project type</option>
-                    {projectTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
+                    {projectTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -237,8 +277,10 @@ const FontSuggestions = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Select industry</option>
-                    {industries.map(industry => (
-                      <option key={industry} value={industry}>{industry}</option>
+                    {industries.map((industry) => (
+                      <option key={industry} value={industry}>
+                        {industry}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -255,8 +297,10 @@ const FontSuggestions = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Select tone</option>
-                    {tones.map(tone => (
-                      <option key={tone} value={tone}>{tone}</option>
+                    {tones.map((tone) => (
+                      <option key={tone} value={tone}>
+                        {tone}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -341,7 +385,8 @@ const FontSuggestions = () => {
                   No Suggestions Generated Yet
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Fill out the form and click "Generate Suggestions" to get AI-powered font recommendations.
+                  Fill out the form and click "Generate Suggestions" to get
+                  AI-powered font recommendations.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
                   <div className="p-4 border border-gray-200 rounded-lg">
@@ -398,9 +443,9 @@ const FontSuggestions = () => {
                             <button
                               onClick={() => likeSuggestion(suggestion.id)}
                               className={`p-2 rounded-lg transition-colors ${
-                                suggestion.liked 
-                                  ? 'text-red-500 bg-red-50' 
-                                  : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                suggestion.liked
+                                  ? "text-red-500 bg-red-50"
+                                  : "text-gray-400 hover:text-red-500 hover:bg-red-50"
                               }`}
                             >
                               <HeartIcon className="h-5 w-5" />
@@ -410,38 +455,52 @@ const FontSuggestions = () => {
 
                         {/* Font Previews */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                          <FontPreview 
-                            font={suggestion.primaryFont} 
-                            label="Primary Font" 
+                          <FontPreview
+                            font={suggestion.primaryFont}
+                            label="Primary Font"
                           />
-                          <FontPreview 
-                            font={suggestion.secondaryFont} 
-                            label="Secondary Font" 
+                          <FontPreview
+                            font={suggestion.secondaryFont}
+                            label="Secondary Font"
                           />
                         </div>
 
                         {/* Usage Guidelines */}
                         <div className="mb-6">
-                          <h4 className="text-sm font-medium text-gray-700 mb-3">Usage Guidelines:</h4>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">
+                            Usage Guidelines:
+                          </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                             <div className="bg-blue-50 p-3 rounded-lg">
-                              <span className="font-medium text-blue-800">Headings:</span>
-                              <p className="text-blue-700">{suggestion.usage.headings}</p>
+                              <span className="font-medium text-blue-800">
+                                Headings:
+                              </span>
+                              <p className="text-blue-700">
+                                {suggestion.usage.headings}
+                              </p>
                             </div>
                             <div className="bg-green-50 p-3 rounded-lg">
-                              <span className="font-medium text-green-800">Body Text:</span>
-                              <p className="text-green-700">{suggestion.usage.body}</p>
+                              <span className="font-medium text-green-800">
+                                Body Text:
+                              </span>
+                              <p className="text-green-700">
+                                {suggestion.usage.body}
+                              </p>
                             </div>
                             <div className="bg-purple-50 p-3 rounded-lg">
-                              <span className="font-medium text-purple-800">Accents:</span>
-                              <p className="text-purple-700">{suggestion.usage.accents}</p>
+                              <span className="font-medium text-purple-800">
+                                Accents:
+                              </span>
+                              <p className="text-purple-700">
+                                {suggestion.usage.accents}
+                              </p>
                             </div>
                           </div>
                         </div>
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {suggestion.tags.map(tag => (
+                          {suggestion.tags.map((tag) => (
                             <span
                               key={tag}
                               className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium"
@@ -481,4 +540,4 @@ const FontSuggestions = () => {
   );
 };
 
-export default FontSuggestions; 
+export default FontSuggestions;

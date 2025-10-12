@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { auditAPI, apiUtils } from "../services/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   PhotoIcon,
@@ -20,6 +20,20 @@ import {
   ShieldCheckIcon,
   EyeIcon,
   CursorArrowRaysIcon,
+  SparklesIcon,
+  BoltIcon,
+  TrophyIcon,
+  LightBulbIcon,
+  XMarkIcon,
+  ArrowRightIcon,
+  UserGroupIcon,
+  BookOpenIcon,
+  CpuChipIcon,
+  SwatchIcon,
+  Square3Stack3DIcon,
+  PresentationChartBarIcon,
+  CubeIcon,
+  AwardIcon,
 } from "@heroicons/react/24/outline";
 
 const UXAudit = () => {
@@ -29,29 +43,122 @@ const UXAudit = () => {
   const [dragActive, setDragActive] = useState(false);
   const [context, setContext] = useState("general web application");
   const [focusAreas, setFocusAreas] = useState(["all"]);
-  const [description, setDescription] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
   const fileInputRef = useRef(null);
 
   const contextOptions = [
-    { value: "general web application", label: "General Web App" },
-    { value: "e-commerce", label: "E-commerce" },
-    { value: "landing page", label: "Landing Page" },
-    { value: "dashboard", label: "Dashboard" },
-    { value: "mobile app", label: "Mobile App" },
-    { value: "portfolio", label: "Portfolio" },
-    { value: "blog", label: "Blog/Content" },
-    { value: "saas", label: "SaaS Platform" },
+    {
+      value: "general web application",
+      label: "General Web App",
+      icon: <Square3Stack3DIcon className="h-4 w-4" />,
+    },
+    {
+      value: "e-commerce",
+      label: "E-commerce",
+      icon: <ChartBarIcon className="h-4 w-4" />,
+    },
+    {
+      value: "landing page",
+      label: "Landing Page",
+      icon: <DocumentTextIcon className="h-4 w-4" />,
+    },
+    {
+      value: "dashboard",
+      label: "Dashboard",
+      icon: <PresentationChartBarIcon className="h-4 w-4" />,
+    },
+    {
+      value: "mobile app",
+      label: "Mobile App",
+      icon: <DevicePhoneMobileIcon className="h-4 w-4" />,
+    },
+    {
+      value: "portfolio",
+      label: "Portfolio",
+      icon: <UserGroupIcon className="h-4 w-4" />,
+    },
+    {
+      value: "blog",
+      label: "Blog/Content",
+      icon: <BookOpenIcon className="h-4 w-4" />,
+    },
+    {
+      value: "saas",
+      label: "SaaS Platform",
+      icon: <CpuChipIcon className="h-4 w-4" />,
+    },
   ];
 
   const focusAreaOptions = [
-    { value: "all", label: "All Areas" },
-    { value: "accessibility", label: "Accessibility" },
-    { value: "usability", label: "Usability" },
-    { value: "visualDesign", label: "Visual Design" },
-    { value: "performance", label: "Performance" },
-    { value: "content", label: "Content" },
-    { value: "engagement", label: "Engagement" },
-    { value: "mobile", label: "Mobile UX" },
+    {
+      value: "all",
+      label: "All Areas",
+      icon: <SparklesIcon className="h-4 w-4" />,
+    },
+    {
+      value: "accessibility",
+      label: "Accessibility",
+      icon: <ShieldCheckIcon className="h-4 w-4" />,
+    },
+    {
+      value: "usability",
+      label: "Usability",
+      icon: <CursorArrowRaysIcon className="h-4 w-4" />,
+    },
+    {
+      value: "visualDesign",
+      label: "Visual Design",
+      icon: <SwatchIcon className="h-4 w-4" />,
+    },
+    {
+      value: "performance",
+      label: "Performance",
+      icon: <BoltIcon className="h-4 w-4" />,
+    },
+    {
+      value: "content",
+      label: "Content",
+      icon: <BookOpenIcon className="h-4 w-4" />,
+    },
+    {
+      value: "engagement",
+      label: "Engagement",
+      icon: <HeartIcon className="h-4 w-4" />,
+    },
+    {
+      value: "mobile",
+      label: "Mobile UX",
+      icon: <DevicePhoneMobileIcon className="h-4 w-4" />,
+    },
+  ];
+
+  const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      icon: <EyeIcon className="h-4 w-4" />,
+    },
+    {
+      id: "accessibility",
+      label: "Accessibility",
+      icon: <ShieldCheckIcon className="h-4 w-4" />,
+    },
+    {
+      id: "usability",
+      label: "Usability",
+      icon: <CursorArrowRaysIcon className="h-4 w-4" />,
+    },
+    { id: "design", label: "Design", icon: <SwatchIcon className="h-4 w-4" /> },
+    {
+      id: "conversion",
+      label: "Conversion",
+      icon: <ChartBarIcon className="h-4 w-4" />,
+    },
+    {
+      id: "recommendations",
+      label: "Recommendations",
+      icon: <LightBulbIcon className="h-4 w-4" />,
+    },
   ];
 
   const handleDrag = (e) => {
@@ -94,8 +201,8 @@ const UXAudit = () => {
   };
 
   const analyzeDesign = async () => {
-    if (!uploadedImage && !description.trim()) {
-      alert("Please upload an image or provide a description of your design");
+    if (!uploadedImage) {
+      alert("Please upload an image of your design");
       return;
     }
 
@@ -103,38 +210,15 @@ const UXAudit = () => {
     try {
       const form = new FormData();
 
-      if (uploadedImage) {
-        form.append("image", uploadedImage.file);
-      }
-
+      form.append("image", uploadedImage.file);
       form.append("context", context);
       form.append("focusAreas", JSON.stringify(focusAreas));
-      form.append("description", description.trim());
-      // Let server use its configured model from environment
+      form.append("description", "");
 
       const { data } = await auditAPI.analyze(form);
 
-      console.log("📥 FRONTEND: Received full API response:", data);
-
       const audit = data?.data?.audit;
       const imageUrl = data?.data?.imageUrl || uploadedImage?.preview;
-
-      console.log("📋 FRONTEND: Extracted audit data:", {
-        hasAudit: !!audit,
-        auditKeys: audit ? Object.keys(audit) : [],
-        hasExecutiveSummary: !!audit?.executiveSummary,
-        hasDesignAnalysis: !!audit?.designAnalysis,
-        hasAccessibilityAudit: !!audit?.accessibilityAudit,
-        hasUsabilityAnalysis: !!audit?.usabilityAnalysis,
-        hasConversionOptimization: !!audit?.conversionOptimization,
-        hasResponsiveDesign: !!audit?.responsiveDesign,
-        hasUxWriting: !!audit?.uxWriting,
-        hasImplementationRoadmap: !!audit?.implementationRoadmap,
-        hasCompetitiveBenchmark: !!audit?.competitiveBenchmark,
-        hasDesignSystemRecommendations: !!audit?.designSystemRecommendations,
-        overallScore: audit?.overallScore,
-        executiveSummaryScore: audit?.executiveSummary?.overallScore,
-      });
 
       if (!audit) {
         throw new Error("No audit data received");
@@ -191,24 +275,17 @@ const UXAudit = () => {
 
       const response = await auditAPI.download(auditReport, reportTitle);
 
-      // Create blob from response
       const blob = new Blob([response.data], { type: "application/pdf" });
-
-      // Create download link
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `${reportTitle}.pdf`;
 
-      // Trigger download
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-
-      console.log("✅ PDF report downloaded successfully");
     } catch (error) {
       const message = apiUtils.handleError(error);
       console.error("Error downloading report:", message);
@@ -216,43 +293,71 @@ const UXAudit = () => {
     }
   };
 
+  const getScoreColor = (score) => {
+    if (score >= 90) return "text-emerald-500";
+    if (score >= 70) return "text-blue-500";
+    if (score >= 50) return "text-amber-500";
+    return "text-red-500";
+  };
+
+  const getScoreLabel = (score) => {
+    if (score >= 90) return "Excellent";
+    if (score >= 70) return "Good";
+    if (score >= 50) return "Fair";
+    return "Needs Work";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
           <div className="flex items-center justify-center mb-4">
-            <MagnifyingGlassIcon className="h-8 w-8 text-purple-600 mr-3" />
+            <EyeIcon className="h-8 w-8 text-indigo-600 mr-3" />
             <h1 className="text-4xl font-bold text-gray-900">UX Audit</h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Upload your design and get instant AI-powered UX analysis. Receive
-            detailed feedback on accessibility, usability, visual design, and
-            performance.
+            Get comprehensive UX analysis and actionable insights for your
+            designs. Our AI evaluates accessibility, usability, visual design,
+            and conversion optimization to help you create exceptional user
+            experiences.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Upload Section */}
+        {!auditReport ? (
+          // Upload Section
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-4xl mx-auto"
           >
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Upload Design
-              </h2>
-
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200 p-8">
               {/* Upload Area */}
               <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                className={`relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300 ${
                   dragActive
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-300 hover:border-purple-400"
+                    ? "border-indigo-400 bg-indigo-50/50 scale-105"
+                    : "border-slate-300 hover:border-slate-400 hover:bg-slate-50/50"
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -260,38 +365,44 @@ const UXAudit = () => {
                 onDrop={handleDrop}
               >
                 {uploadedImage ? (
-                  <div className="space-y-4">
-                    <img
-                      src={uploadedImage.preview}
-                      alt="Uploaded design"
-                      className="max-w-full h-64 object-contain mx-auto rounded-lg"
-                    />
-                    <div className="flex items-center justify-center space-x-2">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-4"
+                  >
+                    <div className="relative group">
+                      <img
+                        src={uploadedImage.preview}
+                        alt="Uploaded design"
+                        className="max-w-full h-64 object-cover mx-auto rounded-xl shadow-lg"
+                      />
                       <button
                         onClick={() => setUploadedImage(null)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                       >
-                        Remove
+                        <XMarkIcon className="h-4 w-4" />
                       </button>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">
-                        {uploadedImage.file.name}
-                      </span>
                     </div>
-                  </div>
+                    <div className="text-center">
+                      <p className="text-sm text-slate-500 font-medium">
+                        {uploadedImage.file.name}
+                      </p>
+                    </div>
+                  </motion.div>
                 ) : (
-                  <div>
-                    <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-lg font-medium text-gray-900 mb-2">
-                      Drop your design here
-                    </p>
-                    <p className="text-gray-600 mb-4">
-                      or click to browse files
+                  <div className="text-center">
+                    <PhotoIcon className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                      Upload your design
+                    </h3>
+                    <p className="text-slate-500 mb-6">
+                      PNG, JPG, or WebP up to 10MB
                     </p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
+                      <PhotoIcon className="h-5 w-5 mr-2" />
                       Choose File
                     </button>
                     <input
@@ -305,110 +416,29 @@ const UXAudit = () => {
                 )}
               </div>
 
-              {/* Analysis Configuration */}
-              <div className="mt-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Analysis Configuration
-                </h3>
-
-                {/* Context Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Design Context
-                  </label>
-                  <select
-                    value={context}
-                    onChange={(e) => setContext(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {contextOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Focus Areas */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Focus Areas
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {focusAreaOptions.map((option) => (
-                      <label
-                        key={option.value}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={focusAreas.includes(option.value)}
-                          onChange={(e) => {
-                            if (option.value === "all") {
-                              setFocusAreas(e.target.checked ? ["all"] : []);
-                            } else {
-                              if (e.target.checked) {
-                                setFocusAreas((prev) =>
-                                  prev
-                                    .filter((f) => f !== "all")
-                                    .concat(option.value)
-                                );
-                              } else {
-                                setFocusAreas((prev) =>
-                                  prev.filter((f) => f !== option.value)
-                                );
-                              }
-                            }
-                          }}
-                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-sm text-gray-700">
-                          {option.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Design Description (Optional)
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe your design, target audience, goals, or specific concerns..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Adding context helps provide more targeted recommendations
-                  </p>
-                </div>
-              </div>
+              {/* Configuration */}
 
               {/* Analyze Button */}
-              {(uploadedImage || description.trim()) && (
+              {uploadedImage && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 space-y-3"
+                  className="mt-8"
                 >
                   <button
                     onClick={analyzeDesign}
                     disabled={isAnalyzing}
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl"
                   >
                     {isAnalyzing ? (
                       <>
-                        <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                        Analyzing Design...
+                        <ArrowPathIcon className="h-6 w-6 animate-spin" />
+                        <span>Analyzing Design...</span>
                       </>
                     ) : (
                       <>
-                        <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
-                        Analyze Design
+                        <SparklesIcon className="h-6 w-6" />
+                        <span>Start Analysis</span>
                       </>
                     )}
                   </button>
@@ -416,1214 +446,1438 @@ const UXAudit = () => {
               )}
             </div>
           </motion.div>
-
-          {/* Results Section */}
+        ) : (
+          // Results Section
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-4 max-w-6xl mx-auto"
           >
-            {!auditReport ? (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-                <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No Audit Report Yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Upload a design and click "Analyze Design" to get detailed UX
-                  feedback.
+            {/* Header Actions */}
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Analysis Results
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Comprehensive UX audit completed
                 </p>
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <ExclamationTriangleIcon className="h-8 w-8 mx-auto mb-2" />
-                    <p>Accessibility</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setAuditReport(null);
+                    setUploadedImage(null);
+                    setActiveTab("overview");
+                  }}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center space-x-2 font-medium"
+                >
+                  <ArrowRightIcon className="h-4 w-4 rotate-180" />
+                  <span>New Analysis</span>
+                </button>
+                <button className="p-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                  <ShareIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={handleDownloadReport}
+                  className="p-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  <ArrowDownTrayIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Score Overview */}
+            <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex-1 pr-6">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                    Overall Score
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed">
+                    {(() => {
+                      // First, check if there's an actual summary from the audit report
+                      const actualSummary =
+                        auditReport?.executiveSummary?.summary ||
+                        auditReport?.summary;
+                      if (actualSummary) {
+                        return actualSummary;
+                      }
+
+                      // Fall back to score-based messages if no summary available
+                      const score =
+                        auditReport?.executiveSummary?.overallScore ||
+                        auditReport?.overallScore ||
+                        0;
+                      if (score >= 90)
+                        return "Exceptional design with excellent user experience";
+                      if (score >= 70)
+                        return "Good overall design with room for optimization";
+                      if (score >= 50)
+                        return "Fair design that needs improvement";
+                      return "Design requires significant improvement";
+                    })()}
+                  </p>
+                </div>
+                <div className="text-right bg-white/30 rounded-xl p-4">
+                  <div
+                    className={`text-5xl font-bold mb-1 ${getScoreColor(
+                      auditReport?.executiveSummary?.overallScore ||
+                        auditReport?.overallScore ||
+                        0
+                    )}`}
+                  >
+                    {auditReport?.executiveSummary?.overallScore ||
+                      auditReport?.overallScore ||
+                      0}
                   </div>
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <CheckCircleIcon className="h-8 w-8 mx-auto mb-2" />
-                    <p>Usability</p>
+                  <p className="text-slate-500 font-medium text-sm">
+                    {getScoreLabel(
+                      auditReport?.executiveSummary?.overallScore ||
+                        auditReport?.overallScore ||
+                        0
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="relative h-4 bg-slate-200 rounded-full overflow-hidden mb-8 shadow-inner">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${
+                      auditReport?.executiveSummary?.overallScore ||
+                      auditReport?.overallScore ||
+                      0
+                    }%`,
+                  }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className={`absolute inset-y-0 left-0 rounded-full shadow-sm ${
+                    (auditReport?.executiveSummary?.overallScore ||
+                      auditReport?.overallScore ||
+                      0) >= 90
+                      ? "bg-gradient-to-r from-emerald-500 to-green-600"
+                      : (auditReport?.executiveSummary?.overallScore ||
+                          auditReport?.overallScore ||
+                          0) >= 80
+                      ? "bg-gradient-to-r from-blue-500 to-indigo-600"
+                      : (auditReport?.executiveSummary?.overallScore ||
+                          auditReport?.overallScore ||
+                          0) >= 70
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600"
+                      : (auditReport?.executiveSummary?.overallScore ||
+                          auditReport?.overallScore ||
+                          0) >= 60
+                      ? "bg-gradient-to-r from-yellow-500 to-amber-600"
+                      : (auditReport?.executiveSummary?.overallScore ||
+                          auditReport?.overallScore ||
+                          0) >= 50
+                      ? "bg-gradient-to-r from-orange-500 to-amber-600"
+                      : "bg-gradient-to-r from-red-500 to-rose-600"
+                  }`}
+                />
+              </div>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-900">
+                    {auditReport?.executiveSummary?.criticalIssuesCount ||
+                      auditReport?.criticalIssues?.length ||
+                      0}
                   </div>
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <PhotoIcon className="h-8 w-8 mx-auto mb-2" />
-                    <p>Visual Design</p>
+                  <div className="text-xs text-slate-600 font-medium">
+                    Critical Issues
                   </div>
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <ArrowPathIcon className="h-8 w-8 mx-auto mb-2" />
-                    <p>Performance</p>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                  <ClockIcon className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                  <div className="text-lg font-bold text-slate-900">
+                    {auditReport?.executiveSummary?.timeToImplementFixes ||
+                      "2-3 weeks"}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium">
+                    Time to Fix
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                  <ChartBarIcon className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-900">
+                    {auditReport?.quickWins?.length || 0}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium">
+                    Quick Wins
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                  <TrophyIcon className="h-6 w-6 text-amber-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-900">
+                    {auditReport?.strengths?.length || 0}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium">
+                    Strengths
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Audit Report
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
-                      <ShareIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={handleDownloadReport}
-                      className="p-2 text-indigo-600 hover:text-indigo-800 rounded-lg transition-colors hover:bg-indigo-50"
-                      title="Download PDF Report"
-                    >
-                      <ArrowDownTrayIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Executive Summary */}
-                {auditReport?.executiveSummary && (
-                  <div className="mb-6 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      📋 Executive Summary
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2">
-                          Immediate Impression
-                        </h4>
-                        <p className="text-sm text-gray-700">
-                          {auditReport.executiveSummary.immediateImpression}
-                        </p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2">
-                          Business Impact
-                        </h4>
-                        <p className="text-sm text-gray-700">
+              {/* Business Impact Summary & WCAG Compliance */}
+              {(auditReport?.executiveSummary?.businessImpact ||
+                auditReport?.accessibilityAudit?.wcagCompliance) && (
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {auditReport?.executiveSummary?.businessImpact && (
+                    <div className="relative overflow-hidden p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 rounded-2xl border border-indigo-200 shadow-lg">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-200/30 to-purple-200/30 rounded-full transform translate-x-16 -translate-y-16"></div>
+                      <div className="relative">
+                        <div className="flex items-center mb-4">
+                          <div className="p-3 bg-indigo-100 rounded-xl mr-4">
+                            <ChartBarIcon className="h-6 w-6 text-indigo-600" />
+                          </div>
+                          <h4 className="text-xl font-bold text-slate-900">
+                            Business Impact Analysis
+                          </h4>
+                        </div>
+                        <p className="text-slate-700 leading-relaxed text-sm">
                           {auditReport.executiveSummary.businessImpact}
                         </p>
-                      </div>
-                      <div className="bg-white p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2">
-                          Critical Issues
-                        </h4>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-red-600">
-                            {auditReport.executiveSummary.criticalIssuesCount}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            issues found
+                        <div className="mt-6 flex items-center text-indigo-600">
+                          <div className="w-2 h-2 bg-indigo-600 rounded-full mr-2"></div>
+                          <span className="text-sm font-medium">
+                            Strategic Insights
                           </span>
                         </div>
                       </div>
-                      <div className="bg-white p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                          <ClockIcon className="h-4 w-4 text-green-600 mr-1" />
-                          Time to Fix
-                        </h4>
-                        <span className="text-lg font-semibold text-green-600">
-                          {auditReport.executiveSummary.timeToImplementFixes}
-                        </span>
+                    </div>
+                  )}
+
+                  {auditReport?.accessibilityAudit?.wcagCompliance && (
+                    <div className="relative overflow-hidden p-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-2xl border border-emerald-200 shadow-lg">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/30 to-teal-200/30 rounded-full transform translate-x-16 -translate-y-16"></div>
+                      <div className="relative">
+                        <div className="flex items-center mb-4">
+                          <div className="p-3 bg-emerald-100 rounded-xl mr-4">
+                            <ShieldCheckIcon className="h-6 w-6 text-emerald-600" />
+                          </div>
+                          <h4 className="text-xl font-bold text-slate-900">
+                            WCAG Compliance
+                          </h4>
+                        </div>
+                        <p className="text-slate-700 leading-relaxed text-sm mb-4">
+                          {auditReport.accessibilityAudit.wcagCompliance}
+                        </p>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <div className="flex items-center text-emerald-600">
+                            <div className="w-2 h-2 bg-emerald-600 rounded-full mr-2"></div>
+                            <span className="font-medium">AA - 60%</span>
+                          </div>
+                          <div className="flex items-center text-emerald-500">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
+                            <span className="font-medium">AAA - 30%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Tab Navigation */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-2 shadow-sm">
+              <div className="flex justify-center space-x-1 overflow-x-auto">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar"
+                style={{ scrollbarWidth: "thin" }}
+              >
+                {activeTab === "overview" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Strengths */}
+                    <div
+                      className={`p-8 rounded-2xl shadow-lg ${(() => {
+                        const score =
+                          auditReport?.executiveSummary?.overallScore ||
+                          auditReport?.overallScore ||
+                          0;
+                        if (score >= 90)
+                          return "bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 border border-emerald-200";
+                        if (score >= 70)
+                          return "bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-100 border border-blue-200";
+                        if (score >= 50)
+                          return "bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 border border-amber-200";
+                        return "bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 border border-slate-200";
+                      })()}`}
+                    >
+                      <div className="flex items-center mb-6">
+                        <HeartIcon
+                          className={`h-6 w-6 mr-4 ${(() => {
+                            const score =
+                              auditReport?.executiveSummary?.overallScore ||
+                              auditReport?.overallScore ||
+                              0;
+                            if (score >= 90) return "text-emerald-600";
+                            if (score >= 70) return "text-blue-600";
+                            if (score >= 50) return "text-amber-600";
+                            return "text-slate-600";
+                          })()}`}
+                        />
+                        <h3 className="text-xl font-bold text-slate-900">
+                          Strengths
+                        </h3>
+                      </div>
+                      <div className="space-y-3">
+                        {(() => {
+                          const score =
+                            auditReport?.executiveSummary?.overallScore ||
+                            auditReport?.overallScore ||
+                            0;
+                          const strengths = auditReport?.strengths || [];
+
+                          // Only show strengths if score is reasonable (50+)
+                          if (score < 50) {
+                            return (
+                              <p className="text-slate-600 text-center py-8">
+                                Significant improvements needed before
+                                identifying strengths.
+                              </p>
+                            );
+                          }
+
+                          // Show strengths for scores 50+
+                          if (strengths.length > 0) {
+                            return strengths.map((strength, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start space-x-3"
+                              >
+                                <CheckCircleIcon className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                <p className="text-slate-700 text-base leading-relaxed">
+                                  {strength}
+                                </p>
+                              </div>
+                            ));
+                          }
+
+                          // No strengths found
+                          return (
+                            <p className="text-slate-600 text-center py-8">
+                              {score >= 70
+                                ? "No specific strengths identified yet."
+                                : "Focus on addressing key issues to unlock design strengths."}
+                            </p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Quick Wins */}
+                    <div className="p-8 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 rounded-2xl border border-amber-200 shadow-lg">
+                      <div className="flex items-center mb-6">
+                        <BoltIcon className="h-6 w-6 text-amber-600 mr-4" />
+                        <h3 className="text-xl font-bold text-slate-900">
+                          Quick Wins
+                        </h3>
+                      </div>
+                      <div className="space-y-3">
+                        {(auditReport?.quickWins || []).map((win, index) => (
+                          <div
+                            key={index}
+                            className="p-3 bg-white rounded-xl border border-amber-300 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="text-base font-semibold text-slate-900 leading-tight flex-1">
+                                {typeof win === "string" ? win : win.title}
+                              </h4>
+                              {typeof win === "object" &&
+                                win.timeToImplement && (
+                                  <span className="px-3 py-1 bg-amber-200 text-amber-900 rounded-lg text-xs font-medium whitespace-nowrap ml-4">
+                                    {win.timeToImplement}
+                                  </span>
+                                )}
+                            </div>
+
+                            {typeof win === "object" && win.implementation && (
+                              <p className="text-slate-700 leading-relaxed text-sm mb-2">
+                                {win.implementation}
+                              </p>
+                            )}
+
+                            {typeof win === "object" && win.expectedImpact && (
+                              <div className="flex items-start space-x-2 p-2 bg-green-50 rounded-lg border-l-4 border-green-400">
+                                <span className="text-sm text-green-800 font-medium">
+                                  Impact: {win.expectedImpact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {(!auditReport?.quickWins ||
+                          auditReport.quickWins.length === 0) && (
+                          <div className="text-center py-8">
+                            <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-200 rounded-full mb-3">
+                              <BoltIcon className="w-6 h-6 text-amber-700" />
+                            </div>
+                            <p className="text-slate-700 font-medium mb-1">
+                              No quick wins identified yet
+                            </p>
+                            <p className="text-slate-600 text-sm">
+                              Run an audit to discover opportunities
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Overall Score */}
-                <div className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl p-6 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Overall Score
-                      </h3>
-                      <p className="text-gray-600 text-sm">
-                        {auditReport.summary}
-                      </p>
-                      {auditReport?.metadata?.analysisDate && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Analyzed on{" "}
-                          {new Date(
-                            auditReport.metadata.analysisDate
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-bold text-purple-600">
-                        {auditReport?.executiveSummary?.overallScore ||
-                          auditReport.overallScore}
-                        /100
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {(auditReport?.executiveSummary?.overallScore ||
-                          auditReport.overallScore) >= 90
-                          ? "Excellent"
-                          : (auditReport?.executiveSummary?.overallScore ||
-                              auditReport.overallScore) >= 70
-                          ? "Good"
-                          : (auditReport?.executiveSummary?.overallScore ||
-                              auditReport.overallScore) >= 50
-                          ? "Fair"
-                          : "Needs Improvement"}
-                      </div>
-                      {auditReport?.metadata?.model && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          AI Model: {auditReport.metadata.model}
+                {/* Accessibility Tab */}
+                {activeTab === "accessibility" &&
+                  auditReport?.categories?.accessibility && (
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center space-x-3">
+                          <ShieldCheckIcon className="h-7 w-7 text-blue-500" />
+                          <h3 className="text-2xl font-semibold text-slate-900">
+                            Accessibility Analysis
+                          </h3>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="mt-4">
-                    <div className="bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${
-                            auditReport?.executiveSummary?.overallScore ||
-                            auditReport.overallScore
-                          }%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div className="space-y-6">
-                  {Object.entries(auditReport?.categories || {}).map(
-                    ([category, data]) => (
-                      <div
-                        key={category}
-                        className="border border-gray-200 rounded-lg p-4"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-lg font-semibold text-gray-900 capitalize">
-                            {category.replace(/([A-Z])/g, " $1").trim()}
-                          </h4>
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-purple-600">
-                              {data?.score ?? 0}/100
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {data?.score >= 90
-                                ? "Excellent"
-                                : data?.score >= 70
-                                ? "Good"
-                                : data?.score >= 50
-                                ? "Fair"
-                                : "Needs Work"}
-                            </div>
+                        <div className="text-right">
+                          <div
+                            className={`text-3xl font-bold ${getScoreColor(
+                              auditReport.categories.accessibility.score || 0
+                            )}`}
+                          >
+                            {auditReport.categories.accessibility.score || 0}
+                            /100
                           </div>
+                          <p className="text-slate-500">
+                            {getScoreLabel(
+                              auditReport.categories.accessibility.score || 0
+                            )}
+                          </p>
                         </div>
+                      </div>
 
-                        <div className="space-y-3">
-                          {(data?.issues || []).length === 0 ? (
-                            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                              <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                              <span className="text-sm text-green-700">
-                                No significant issues found in this category
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {(
+                          auditReport.categories.accessibility.issues || []
+                        ).map((issue, index) => (
+                          <div
+                            key={index}
+                            className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0 p-2.5 rounded-lg bg-red-50">
+                                  {getIssueIcon(issue.type)}
+                                </div>
+                                <h5 className="text-base font-semibold text-slate-900">
+                                  {issue.title || "Issue"}
+                                </h5>
+                              </div>
+                              <span
+                                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${getSeverityColor(
+                                  issue.severity || "low"
+                                )}`}
+                              >
+                                {issue.severity || "low"}
                               </span>
                             </div>
-                          ) : (
-                            (data?.issues || []).map((issue, index) => (
-                              <div
-                                key={index}
-                                className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
-                              >
-                                {getIssueIcon(issue.type)}
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <h5 className="font-medium text-gray-900">
-                                      {issue?.title || "Issue"}
-                                    </h5>
-                                    <span
-                                      className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(
-                                        issue?.severity || "low"
-                                      )}`}
-                                    >
-                                      {issue?.severity || "low"}
-                                    </span>
-                                    {issue?.priority && (
-                                      <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                          issue.priority === "high"
-                                            ? "bg-red-100 text-red-700"
-                                            : issue.priority === "medium"
-                                            ? "bg-yellow-100 text-yellow-700"
-                                            : "bg-green-100 text-green-700"
-                                        }`}
-                                      >
-                                        {issue.priority} priority
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-gray-600 mb-2">
-                                    {issue?.description || ""}
+
+                            <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                              {issue.description || ""}
+                            </p>
+
+                            {issue.suggestion && (
+                              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                                <div className="flex items-start space-x-2">
+                                  <span className="text-blue-600 flex-shrink-0 mt-0.5">
+                                    💡
+                                  </span>
+                                  <p className="text-blue-700 text-sm leading-relaxed">
+                                    {issue.suggestion}
                                   </p>
-                                  {issue?.suggestion && (
-                                    <p className="text-sm text-purple-600 font-medium">
-                                      💡 {issue.suggestion}
-                                    </p>
-                                  )}
-                                  {issue?.wcagGuideline && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                      📋 WCAG: {issue.wcagGuideline}
-                                    </p>
-                                  )}
                                 </div>
                               </div>
-                            ))
+                            )}
+                          </div>
+                        ))}
+                        {(!auditReport.categories.accessibility.issues ||
+                          auditReport.categories.accessibility.issues.length ===
+                            0) && (
+                          <div className="col-span-full text-center py-16">
+                            <div className="inline-flex p-4 rounded-full bg-emerald-100 mb-4">
+                              <CheckCircleIcon className="h-16 w-16 text-emerald-500" />
+                            </div>
+                            <h4 className="text-xl font-semibold text-slate-900 mb-3">
+                              No accessibility issues found!
+                            </h4>
+                            <p className="text-slate-600 max-w-md mx-auto">
+                              Your design meets accessibility standards and
+                              provides a great experience for all users.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Usability Tab */}
+                {activeTab === "usability" && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center space-x-3">
+                        <CursorArrowRaysIcon className="h-7 w-7 text-purple-500" />
+                        <h3 className="text-2xl font-semibold text-slate-900">
+                          Usability Analysis
+                        </h3>
+                      </div>
+                      <div className="text-right">
+                        <div
+                          className={`text-3xl font-bold ${getScoreColor(
+                            auditReport?.usabilityAnalysis?.overallScore ||
+                              auditReport?.categories?.usability?.score ||
+                              0
+                          )}`}
+                        >
+                          {auditReport?.usabilityAnalysis?.overallScore ||
+                            auditReport?.categories?.usability?.score ||
+                            0}
+                          /100
+                        </div>
+                        <p className="text-slate-500">
+                          {getScoreLabel(
+                            auditReport?.usabilityAnalysis?.overallScore ||
+                              auditReport?.categories?.usability?.score ||
+                              0
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* User Flow Efficiency and Navigation Clarity Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                      {/* User Flow Efficiency */}
+                      {auditReport?.usabilityAnalysis?.userFlowEfficiency && (
+                        <div className="p-8 bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-100 rounded-2xl border border-purple-200 shadow-lg">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center">
+                              <BoltIcon className="h-6 w-6 text-purple-600 mr-4" />
+                              <h4 className="text-xl font-bold text-slate-900">
+                                User Flow Efficiency
+                              </h4>
+                            </div>
+                            <div className="text-3xl font-bold text-purple-600">
+                              {
+                                auditReport.usabilityAnalysis.userFlowEfficiency
+                                  .score
+                              }
+                              <span className="text-lg text-purple-300">
+                                /100
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="p-3">
+                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                Clicks to Goal
+                              </span>
+                              <p className="text-slate-700 text-sm">
+                                {
+                                  auditReport.usabilityAnalysis
+                                    .userFlowEfficiency.clicksToGoal
+                                }
+                              </p>
+                            </div>
+                            <div className="p-3">
+                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                Cognitive Load
+                              </span>
+                              <p className="text-slate-700 text-sm">
+                                {
+                                  auditReport.usabilityAnalysis
+                                    .userFlowEfficiency.cognitiveLoad
+                                }
+                              </p>
+                            </div>
+                          </div>
+                          {auditReport.usabilityAnalysis.userFlowEfficiency
+                            .errorPrevention && (
+                            <div className="mt-4 p-3">
+                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                Error Prevention
+                              </span>
+                              <p className="text-slate-700 text-sm">
+                                {
+                                  auditReport.usabilityAnalysis
+                                    .userFlowEfficiency.errorPrevention
+                                }
+                              </p>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    )
-                  )}
-                </div>
+                      )}
 
-                {/* Enhanced Design Analysis */}
-                {auditReport?.designAnalysis && (
-                  <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                      🎨 Design Analysis
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(auditReport.designAnalysis).map(
-                        ([key, analysis]) => (
-                          <div
-                            key={key}
-                            className="bg-white p-4 rounded-lg border"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <h5 className="font-semibold text-gray-900 capitalize">
-                                {key.replace(/([A-Z])/g, " $1").trim()}
-                              </h5>
-                              {analysis.score && (
-                                <span className="text-lg font-bold text-purple-600">
-                                  {analysis.score}/100
+                      {/* Navigation Clarity */}
+                      {auditReport?.usabilityAnalysis?.navigationClarity && (
+                        <div className="p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center">
+                              <Square3Stack3DIcon className="h-6 w-6 text-blue-600 mr-4" />
+                              <h4 className="text-xl font-bold text-slate-900">
+                                Navigation Clarity
+                              </h4>
+                            </div>
+                            <div className="text-3xl font-bold text-blue-600">
+                              {
+                                auditReport.usabilityAnalysis.navigationClarity
+                                  .score
+                              }
+                              <span className="text-lg text-blue-300">
+                                /100
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="p-3">
+                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                Menu Structure
+                              </span>
+                              <p className="text-slate-700 text-sm">
+                                {
+                                  auditReport.usabilityAnalysis
+                                    .navigationClarity.menuStructure
+                                }
+                              </p>
+                            </div>
+                            {auditReport.usabilityAnalysis.navigationClarity
+                              .breadcrumbs && (
+                              <div className="p-3">
+                                <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                  Breadcrumbs
                                 </span>
+                                <p className="text-slate-700 text-sm">
+                                  {
+                                    auditReport.usabilityAnalysis
+                                      .navigationClarity.breadcrumbs
+                                  }
+                                </p>
+                              </div>
+                            )}
+                            {auditReport.usabilityAnalysis.navigationClarity
+                              .searchability && (
+                              <div className="p-3">
+                                <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                  Search
+                                </span>
+                                <p className="text-slate-700 text-sm">
+                                  {
+                                    auditReport.usabilityAnalysis
+                                      .navigationClarity.searchability
+                                  }
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Usability Issues */}
+                    <div className="space-y-6">
+                      <h4 className="text-xl font-semibold text-slate-900">
+                        Issues & Recommendations
+                      </h4>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {(auditReport?.categories?.usability?.issues || []).map(
+                          (issue, index) => (
+                            <div
+                              key={index}
+                              className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="flex-shrink-0 p-2.5 rounded-lg bg-purple-50">
+                                    {getIssueIcon(issue.type)}
+                                  </div>
+                                  <h5 className="text-base font-semibold text-slate-900">
+                                    {issue.title || "Issue"}
+                                  </h5>
+                                </div>
+                                <span
+                                  className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${getSeverityColor(
+                                    issue.severity || "low"
+                                  )}`}
+                                >
+                                  {issue.severity || "low"}
+                                </span>
+                              </div>
+
+                              <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                                {issue.description || ""}
+                              </p>
+
+                              {issue.suggestion && (
+                                <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+                                  <div className="flex items-start space-x-2">
+                                    <span className="text-purple-600 flex-shrink-0 mt-0.5">
+                                      💡
+                                    </span>
+                                    <p className="text-purple-700 text-sm leading-relaxed">
+                                      {issue.suggestion}
+                                    </p>
+                                  </div>
+                                </div>
                               )}
                             </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                            {typeof analysis === "string" ? (
-                              <p className="text-sm text-gray-600">
-                                {analysis}
+                {/* Design Tab */}
+                {activeTab === "design" && (
+                  <div className="space-y-6">
+                    {/* Design Analysis Section */}
+                    {auditReport?.designAnalysis && (
+                      <>
+                        {/* Overall Design Score Header with Cards Inside */}
+                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
+                          <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center space-x-3">
+                              <SwatchIcon className="h-7 w-7 text-purple-500" />
+                              <h3 className="text-2xl font-semibold text-slate-900">
+                                Design Analysis
+                              </h3>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className={`text-3xl font-bold ${getScoreColor(
+                                  auditReport?.categories?.visualDesign
+                                    ?.score || 0
+                                )}`}
+                              >
+                                {auditReport?.categories?.visualDesign?.score ||
+                                  0}
+                                /100
+                              </div>
+                              <p className="text-slate-500">
+                                {getScoreLabel(
+                                  auditReport?.categories?.visualDesign
+                                    ?.score || 0
+                                )}
                               </p>
-                            ) : (
-                              <div className="space-y-3">
-                                {analysis.analysis && (
-                                  <div>
-                                    <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                      Analysis
-                                    </h6>
-                                    <p className="text-sm text-gray-600">
-                                      {analysis.analysis}
-                                    </p>
+                            </div>
+                          </div>
+
+                          {/* Visual Hierarchy, Color Usage, Typography Grid */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Visual Hierarchy */}
+                            {auditReport.designAnalysis.visualHierarchy && (
+                              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200/50 shadow-sm">
+                                <div className="flex items-start justify-between mb-4">
+                                  <h4 className="text-lg font-bold text-slate-900">
+                                    Visual Hierarchy
+                                  </h4>
+                                  <div className="text-right">
+                                    <span className="text-2xl font-bold text-pink-600">
+                                      {
+                                        auditReport.designAnalysis
+                                          .visualHierarchy.score
+                                      }
+                                    </span>
+                                    <span className="text-sm text-pink-300 font-medium">
+                                      /100
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <p className="text-slate-700 mb-4 text-sm leading-relaxed">
+                                  {
+                                    auditReport.designAnalysis.visualHierarchy
+                                      .analysis
+                                  }
+                                </p>
+
+                                {auditReport.designAnalysis.visualHierarchy
+                                  .uxLawsApplied && (
+                                  <div className="mb-4">
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      UX Laws Applied:
+                                    </h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {auditReport.designAnalysis.visualHierarchy.uxLawsApplied.map(
+                                        (law, index) => (
+                                          <span
+                                            key={index}
+                                            className="px-2 py-1 bg-pink-200 text-pink-800 rounded-full text-xs font-medium"
+                                          >
+                                            {law}
+                                          </span>
+                                        )
+                                      )}
+                                    </div>
                                   </div>
                                 )}
 
-                                {analysis.uxLawsApplied &&
-                                  Array.isArray(analysis.uxLawsApplied) && (
-                                    <div>
-                                      <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                        UX Laws Applied
-                                      </h6>
-                                      <div className="flex flex-wrap gap-1">
-                                        {analysis.uxLawsApplied.map(
-                                          (law, idx) => (
-                                            <span
-                                              key={idx}
-                                              className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded"
-                                            >
-                                              {law}
-                                            </span>
-                                          )
-                                        )}
+                                {auditReport.designAnalysis.visualHierarchy
+                                  .improvements && (
+                                  <div>
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      Improvements:
+                                    </h5>
+                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                      {
+                                        auditReport.designAnalysis
+                                          .visualHierarchy.improvements
+                                      }
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Color Usage */}
+                            {auditReport.designAnalysis.colorUsage && (
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                                <div className="flex items-start justify-between mb-4">
+                                  <h4 className="text-lg font-bold text-slate-900">
+                                    Color Usage
+                                  </h4>
+                                  <div className="text-right">
+                                    <span className="text-2xl font-bold text-blue-600">
+                                      {
+                                        auditReport.designAnalysis.colorUsage
+                                          .score
+                                      }
+                                    </span>
+                                    <span className="text-sm text-blue-300 font-medium">
+                                      /100
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {auditReport.designAnalysis.colorUsage
+                                  .contrastRatios && (
+                                  <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <div className="bg-white/70 rounded-lg p-3 text-center border border-blue-200">
+                                      <div className="text-lg font-bold text-slate-900">
+                                        {
+                                          auditReport.designAnalysis.colorUsage
+                                            .contrastRatios.primary
+                                        }
+                                      </div>
+                                      <div className="text-xs text-slate-600 font-medium">
+                                        Primary Contrast
                                       </div>
                                     </div>
-                                  )}
-
-                                {analysis.contrastRatios && (
-                                  <div>
-                                    <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                      Contrast Ratios
-                                    </h6>
-                                    <div className="space-y-1">
-                                      {Object.entries(
-                                        analysis.contrastRatios
-                                      ).map(([element, ratio]) => (
-                                        <div
-                                          key={element}
-                                          className="flex justify-between text-xs"
-                                        >
-                                          <span className="text-gray-600 capitalize">
-                                            {element}:
-                                          </span>
-                                          <span
-                                            className={`font-mono ${
-                                              parseFloat(ratio) >= 4.5
-                                                ? "text-green-600"
-                                                : "text-red-600"
-                                            }`}
-                                          >
-                                            {ratio}
-                                          </span>
-                                        </div>
-                                      ))}
+                                    <div className="bg-white/70 rounded-lg p-3 text-center border border-blue-200">
+                                      <div className="text-lg font-bold text-slate-900">
+                                        {
+                                          auditReport.designAnalysis.colorUsage
+                                            .contrastRatios.secondary
+                                        }
+                                      </div>
+                                      <div className="text-xs text-slate-600 font-medium">
+                                        Secondary Contrast
+                                      </div>
                                     </div>
                                   </div>
                                 )}
 
-                                {analysis.psychologyImpact && (
-                                  <div>
-                                    <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                      Psychology Impact
-                                    </h6>
-                                    <p className="text-xs text-gray-600">
-                                      {analysis.psychologyImpact}
+                                {auditReport.designAnalysis.colorUsage
+                                  .psychologyImpact && (
+                                  <div className="mb-4">
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      Psychology Impact:
+                                    </h5>
+                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                      {
+                                        auditReport.designAnalysis.colorUsage
+                                          .psychologyImpact
+                                      }
                                     </p>
                                   </div>
                                 )}
 
-                                {analysis.emotionalResonance && (
+                                {auditReport.designAnalysis.colorUsage
+                                  .improvements && (
                                   <div>
-                                    <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                      Emotional Resonance
-                                    </h6>
-                                    <p className="text-xs text-gray-600">
-                                      {analysis.emotionalResonance}
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      Improvements:
+                                    </h5>
+                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                      {
+                                        auditReport.designAnalysis.colorUsage
+                                          .improvements
+                                      }
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Typography */}
+                            {auditReport.designAnalysis.typography && (
+                              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-200/50">
+                                <div className="flex items-start justify-between mb-4">
+                                  <h4 className="text-lg font-bold text-slate-900">
+                                    Typography
+                                  </h4>
+                                  <div className="text-right">
+                                    <span className="text-2xl font-bold text-emerald-600">
+                                      {
+                                        auditReport.designAnalysis.typography
+                                          .score
+                                      }
+                                    </span>
+                                    <span className="text-sm text-emerald-300 font-medium">
+                                      /100
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                  <div className="bg-white/70 rounded-lg p-3 text-center border border-emerald-200">
+                                    <div className="text-xl font-bold text-slate-900">
+                                      {
+                                        auditReport.designAnalysis.typography
+                                          .readabilityScore
+                                      }
+                                    </div>
+                                    <div className="text-xs text-slate-600 font-medium">
+                                      Readability Score
+                                    </div>
+                                  </div>
+                                  <div className="bg-white/70 rounded-lg p-3 text-center border border-emerald-200">
+                                    <div className="text-xl font-bold text-slate-900">
+                                      {
+                                        auditReport.designAnalysis.typography
+                                          .hierarchyEffectiveness
+                                      }
+                                    </div>
+                                    <div className="text-xs text-slate-600 font-medium">
+                                      Hierarchy Effectiveness
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {auditReport.designAnalysis.typography
+                                  .emotionalResonance && (
+                                  <div className="mb-4">
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      Emotional Resonance:
+                                    </h5>
+                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                      {
+                                        auditReport.designAnalysis.typography
+                                          .emotionalResonance
+                                      }
                                     </p>
                                   </div>
                                 )}
 
-                                {analysis.improvements && (
+                                {auditReport.designAnalysis.typography
+                                  .improvements && (
                                   <div>
-                                    <h6 className="text-xs font-semibold text-blue-700 mb-1">
-                                      💡 Improvements
-                                    </h6>
-                                    <p className="text-xs text-blue-600">
-                                      {analysis.improvements}
+                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                      Improvements:
+                                    </h5>
+                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                      {
+                                        auditReport.designAnalysis.typography
+                                          .improvements
+                                      }
                                     </p>
                                   </div>
                                 )}
                               </div>
                             )}
                           </div>
-                        )
-                      )}
-                    </div>
+
+                          {/* Design Issues & Recommendations */}
+                          {auditReport?.categories?.visualDesign?.issues &&
+                            auditReport.categories.visualDesign.issues.length >
+                              0 && (
+                              <div className="mt-8">
+                                <h4 className="text-xl font-semibold text-slate-900 mb-6">
+                                  Design Issues & Recommendations
+                                </h4>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-96 overflow-y-auto custom-scrollbar">
+                                  {auditReport.categories.visualDesign.issues.map(
+                                    (issue, index) => (
+                                      <div
+                                        key={index}
+                                        className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                                      >
+                                        <div className="flex items-start justify-between mb-4">
+                                          <div className="flex items-center space-x-3">
+                                            <div className="flex-shrink-0 p-2.5 rounded-lg bg-pink-50">
+                                              {getIssueIcon(issue.type)}
+                                            </div>
+                                            <h5 className="text-base font-semibold text-slate-900">
+                                              {issue.title || "Issue"}
+                                            </h5>
+                                          </div>
+                                          <span
+                                            className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${getSeverityColor(
+                                              issue.severity || "low"
+                                            )}`}
+                                          >
+                                            {issue.severity || "low"}
+                                          </span>
+                                        </div>
+
+                                        <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                                          {issue.description || ""}
+                                        </p>
+
+                                        {issue.suggestion && (
+                                          <div className="p-3 bg-pink-50 rounded-lg border-l-4 border-pink-500">
+                                            <div className="flex items-start space-x-2">
+                                              <span className="text-pink-600 flex-shrink-0 mt-0.5">
+                                                💡
+                                              </span>
+                                              <p className="text-pink-700 text-sm leading-relaxed">
+                                                {issue.suggestion}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
-                {/* Enhanced Accessibility Audit */}
-                {auditReport?.accessibilityAudit && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <ShieldCheckIcon className="h-5 w-5 text-blue-600 mr-2" />
-                      ♿ Accessibility Audit
-                      <span className="ml-2 text-xl font-bold text-blue-600">
-                        {auditReport.accessibilityAudit.overallScore}/100
-                      </span>
-                    </h4>
-
-                    {/* WCAG Compliance */}
-                    <div className="mb-4 p-3 bg-white rounded-lg">
-                      <h5 className="font-semibold text-gray-900 mb-2">
-                        WCAG Compliance
-                      </h5>
-                      <p className="text-sm text-gray-700">
-                        {auditReport.accessibilityAudit.wcagCompliance}
-                      </p>
+                {/* Conversion Tab */}
+                {activeTab === "conversion" && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center space-x-3">
+                        <ChartBarIcon className="h-7 w-7 text-emerald-500" />
+                        <h3 className="text-2xl font-semibold text-slate-900">
+                          Conversion Optimization
+                        </h3>
+                      </div>
+                      <div className="text-right">
+                        <div
+                          className={`text-3xl font-bold ${getScoreColor(
+                            auditReport?.conversionOptimization?.overallScore ||
+                              0
+                          )}`}
+                        >
+                          {auditReport?.conversionOptimization?.overallScore ||
+                            0}
+                          /100
+                        </div>
+                        <p className="text-slate-500">
+                          {getScoreLabel(
+                            auditReport?.conversionOptimization?.overallScore ||
+                              0
+                          )}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Keyboard Navigation */}
-                      {auditReport.accessibilityAudit.keyboardNavigation && (
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-semibold text-gray-900">
-                              Keyboard Navigation
-                            </h5>
-                            <span className="text-sm font-bold text-blue-600">
-                              {
-                                auditReport.accessibilityAudit
-                                  .keyboardNavigation.score
-                              }
-                              /100
-                            </span>
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            <p>
-                              <strong>Tab Order:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit
-                                  .keyboardNavigation.tabOrder
-                              }
-                            </p>
-                            <p>
-                              <strong>Focus Indicators:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit
-                                  .keyboardNavigation.focusIndicators
-                              }
-                            </p>
-                            <p>
-                              <strong>Skip Links:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit
-                                  .keyboardNavigation.skipLinks
-                              }
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Color Contrast */}
-                      {auditReport.accessibilityAudit.colorContrast && (
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-semibold text-gray-900">
-                              Color Contrast
-                            </h5>
-                            <span className="text-sm font-bold text-blue-600">
-                              {
-                                auditReport.accessibilityAudit.colorContrast
-                                  .score
-                              }
-                              /100
-                            </span>
-                          </div>
-                          {auditReport.accessibilityAudit.colorContrast
-                            .failures && (
-                            <div className="space-y-2">
-                              <h6 className="text-xs font-semibold text-red-700">
-                                Failures:
-                              </h6>
-                              {auditReport.accessibilityAudit.colorContrast.failures.map(
-                                (failure, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="p-2 bg-red-50 rounded text-xs"
-                                  >
-                                    <p>
-                                      <strong>{failure.element}</strong>
-                                    </p>
-                                    <p>
-                                      Ratio:{" "}
-                                      <span className="font-mono text-red-600">
-                                        {failure.ratio}
-                                      </span>{" "}
-                                      (Required: {failure.required})
-                                    </p>
-                                    <p>Level: {failure.wcagLevel}</p>
-                                  </div>
-                                )
+                    {auditReport?.conversionOptimization && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* CTA Effectiveness */}
+                        {auditReport.conversionOptimization
+                          .ctaEffectiveness && (
+                          <div className="p-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-2xl border border-emerald-200 shadow-lg">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center">
+                                <CursorArrowRaysIcon className="h-6 w-6 text-emerald-600 mr-4" />
+                                <h4 className="text-xl font-bold text-slate-900">
+                                  CTA Effectiveness
+                                </h4>
+                              </div>
+                              <div className="text-3xl font-bold text-emerald-600">
+                                {
+                                  auditReport.conversionOptimization
+                                    .ctaEffectiveness.score
+                                }
+                                <span className="text-lg text-emerald-300">
+                                  /100
+                                </span>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              {auditReport.conversionOptimization
+                                .ctaEffectiveness.placement && (
+                                <div className="p-3">
+                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                    Placement
+                                  </span>
+                                  <p className="text-slate-700 text-sm">
+                                    {
+                                      auditReport.conversionOptimization
+                                        .ctaEffectiveness.placement
+                                    }
+                                  </p>
+                                </div>
+                              )}
+                              {auditReport.conversionOptimization
+                                .ctaEffectiveness.copyPersuasiveness && (
+                                <div className="p-3">
+                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                    Copy Persuasiveness
+                                  </span>
+                                  <p className="text-slate-700 text-sm">
+                                    {
+                                      auditReport.conversionOptimization
+                                        .ctaEffectiveness.copyPersuasiveness
+                                    }
+                                  </p>
+                                </div>
+                              )}
+                              {auditReport.conversionOptimization
+                                .ctaEffectiveness.visualHierarchy && (
+                                <div className="p-3">
+                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                    Visual Hierarchy
+                                  </span>
+                                  <p className="text-slate-700 text-sm">
+                                    {
+                                      auditReport.conversionOptimization
+                                        .ctaEffectiveness.visualHierarchy
+                                    }
+                                  </p>
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Screen Reader */}
-                      {auditReport.accessibilityAudit.screenReader && (
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-semibold text-gray-900">
-                              Screen Reader
-                            </h5>
-                            <span className="text-sm font-bold text-blue-600">
-                              {
-                                auditReport.accessibilityAudit.screenReader
-                                  .score
-                              }
-                              /100
-                            </span>
                           </div>
-                          <div className="space-y-2 text-sm">
-                            <p>
-                              <strong>Alt Text:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit.screenReader
-                                  .altTextQuality
-                              }
-                            </p>
-                            <p>
-                              <strong>Structure:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit.screenReader
-                                  .semanticStructure
-                              }
-                            </p>
-                            <p>
-                              <strong>ARIA Labels:</strong>{" "}
-                              {
-                                auditReport.accessibilityAudit.screenReader
-                                  .ariaLabels
-                              }
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
 
-                    {/* Code Snippets */}
-                    {auditReport.accessibilityAudit.codeSnippets && (
-                      <div className="mt-4 p-3 bg-white rounded-lg">
-                        <h5 className="font-semibold text-gray-900 mb-3">
-                          🛠️ Code Fixes
-                        </h5>
-                        <div className="space-y-3">
-                          {auditReport.accessibilityAudit.codeSnippets.map(
-                            (snippet, idx) => (
-                              <div
-                                key={idx}
-                                className="border border-gray-200 rounded p-3"
-                              >
-                                <h6 className="text-sm font-semibold text-gray-800 mb-2">
-                                  {snippet.issue}
-                                </h6>
-                                <pre className="text-xs bg-gray-900 text-green-400 p-2 rounded overflow-x-auto">
-                                  <code>{snippet.fix}</code>
-                                </pre>
+                        {/* Trust Signals */}
+                        {auditReport.conversionOptimization.trustSignals && (
+                          <div className="p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center">
+                                <ShieldCheckIcon className="h-6 w-6 text-blue-600 mr-4" />
+                                <h4 className="text-xl font-bold text-slate-900">
+                                  Trust Signals
+                                </h4>
                               </div>
-                            )
-                          )}
-                        </div>
+                              <div className="text-3xl font-bold text-blue-600">
+                                {
+                                  auditReport.conversionOptimization
+                                    .trustSignals.score
+                                }
+                                <span className="text-lg text-blue-300">
+                                  /100
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {auditReport.conversionOptimization.trustSignals
+                                  .present && (
+                                  <div className="p-3">
+                                    <span className="font-semibold text-slate-900 text-sm block mb-2">
+                                      Present Signals
+                                    </span>
+                                    <div className="space-y-2">
+                                      {auditReport.conversionOptimization.trustSignals.present.map(
+                                        (signal, index) => (
+                                          <div
+                                            key={index}
+                                            className="flex items-center space-x-2"
+                                          >
+                                            <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                                            <span className="text-slate-700 text-sm">
+                                              {signal}
+                                            </span>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {auditReport.conversionOptimization.trustSignals
+                                  .missing && (
+                                  <div className="p-3">
+                                    <span className="font-semibold text-slate-900 text-sm block mb-2">
+                                      Missing Signals
+                                    </span>
+                                    <div className="space-y-2">
+                                      {auditReport.conversionOptimization.trustSignals.missing.map(
+                                        (signal, index) => (
+                                          <div
+                                            key={index}
+                                            className="flex items-center space-x-2"
+                                          >
+                                            <XMarkIcon className="h-4 w-4 text-red-500" />
+                                            <span className="text-slate-700 text-sm">
+                                              {signal}
+                                            </span>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {auditReport.conversionOptimization.trustSignals
+                                .improvements && (
+                                <div className="p-3">
+                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                    Improvements
+                                  </span>
+                                  <p className="text-slate-700 text-sm">
+                                    {
+                                      auditReport.conversionOptimization
+                                        .trustSignals.improvements
+                                    }
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Enhanced Usability Analysis */}
-                {auditReport?.usabilityAnalysis && (
-                  <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <CursorArrowRaysIcon className="h-5 w-5 text-green-600 mr-2" />
-                      🎯 Usability Analysis
-                      <span className="ml-2 text-xl font-bold text-green-600">
-                        {auditReport.usabilityAnalysis.overallScore}/100
-                      </span>
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(auditReport.usabilityAnalysis)
-                        .filter(([key]) => key !== "overallScore")
-                        .map(([key, analysis]) => (
-                          <div key={key} className="bg-white p-4 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900 capitalize">
-                                {key.replace(/([A-Z])/g, " $1").trim()}
-                              </h5>
-                              {analysis.score && (
-                                <span className="text-sm font-bold text-green-600">
-                                  {analysis.score}/100
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-2 text-sm text-gray-600">
-                              {Object.entries(analysis)
-                                .filter(([subKey]) => subKey !== "score")
-                                .map(([subKey, value]) => (
-                                  <p key={subKey}>
-                                    <strong className="text-gray-800 capitalize">
-                                      {subKey.replace(/([A-Z])/g, " $1").trim()}
-                                      :
-                                    </strong>{" "}
-                                    {value}
-                                  </p>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Enhanced Conversion Optimization */}
-                {auditReport?.conversionOptimization && (
-                  <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <ChartBarIcon className="h-5 w-5 text-yellow-600 mr-2" />
-                      💰 Conversion Optimization
-                      <span className="ml-2 text-xl font-bold text-yellow-600">
-                        {auditReport.conversionOptimization.overallScore}/100
-                      </span>
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(auditReport.conversionOptimization)
-                        .filter(([key]) => key !== "overallScore")
-                        .map(([key, analysis]) => (
-                          <div key={key} className="bg-white p-4 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900 capitalize">
-                                {key.replace(/([A-Z])/g, " $1").trim()}
-                              </h5>
-                              {analysis.score && (
-                                <span className="text-sm font-bold text-yellow-600">
-                                  {analysis.score}/100
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-2 text-sm text-gray-600">
-                              {Object.entries(analysis)
-                                .filter(([subKey]) => subKey !== "score")
-                                .map(([subKey, value]) => (
-                                  <div key={subKey}>
-                                    <strong className="text-gray-800 capitalize">
-                                      {subKey.replace(/([A-Z])/g, " $1").trim()}
-                                      :
-                                    </strong>
-                                    {Array.isArray(value) ? (
-                                      <ul className="list-disc list-inside ml-2 mt-1">
-                                        {value.map((item, idx) => (
-                                          <li key={idx}>{item}</li>
-                                        ))}
-                                      </ul>
-                                    ) : (
-                                      <span> {value}</span>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Enhanced Responsive Design */}
-                {auditReport?.responsiveDesign && (
-                  <div className="mt-6 p-4 bg-pink-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <DevicePhoneMobileIcon className="h-5 w-5 text-pink-600 mr-2" />
-                      📱 Responsive Design
-                      <span className="ml-2 text-xl font-bold text-pink-600">
-                        {auditReport.responsiveDesign.overallScore}/100
-                      </span>
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(auditReport.responsiveDesign)
-                        .filter(([key]) => key !== "overallScore")
-                        .map(([key, analysis]) => (
-                          <div key={key} className="bg-white p-4 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900 capitalize">
-                                {key.replace(/([A-Z])/g, " $1").trim()}
-                              </h5>
-                              {analysis.score && (
-                                <span className="text-sm font-bold text-pink-600">
-                                  {analysis.score}/100
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-2 text-sm text-gray-600">
-                              {Object.entries(analysis)
-                                .filter(([subKey]) => subKey !== "score")
-                                .map(([subKey, value]) => (
-                                  <p key={subKey}>
-                                    <strong className="text-gray-800 capitalize">
-                                      {subKey.replace(/([A-Z])/g, " $1").trim()}
-                                      :
-                                    </strong>{" "}
-                                    {value}
-                                  </p>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Enhanced UX Writing */}
-                {auditReport?.uxWriting && (
-                  <div className="mt-6 p-4 bg-teal-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <PencilIcon className="h-5 w-5 text-teal-600 mr-2" />
-                      ✍️ UX Writing
-                      <span className="ml-2 text-xl font-bold text-teal-600">
-                        {auditReport.uxWriting.overallScore}/100
-                      </span>
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(auditReport.uxWriting)
-                        .filter(([key]) => key !== "overallScore")
-                        .map(([key, analysis]) => (
-                          <div key={key} className="bg-white p-4 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900 capitalize">
-                                {key.replace(/([A-Z])/g, " $1").trim()}
-                              </h5>
-                              {analysis.score && (
-                                <span className="text-sm font-bold text-teal-600">
-                                  {analysis.score}/100
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-2 text-sm text-gray-600">
-                              {Object.entries(analysis)
-                                .filter(([subKey]) => subKey !== "score")
-                                .map(([subKey, value]) => (
-                                  <p key={subKey}>
-                                    <strong className="text-gray-800 capitalize">
-                                      {subKey.replace(/([A-Z])/g, " $1").trim()}
-                                      :
-                                    </strong>{" "}
-                                    {value}
-                                  </p>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Detailed Recommendations */}
-                {auditReport?.recommendations &&
-                  auditReport.recommendations.length > 0 && (
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                        Detailed Recommendations
-                      </h4>
-                      <div className="space-y-4">
-                        {auditReport.recommendations.map((rec, index) => (
-                          <div
-                            key={index}
-                            className="bg-white p-4 rounded-lg border-l-4 border-blue-500"
-                          >
-                            <div className="flex items-start space-x-3">
-                              <span
-                                className={`px-2 py-1 rounded text-xs font-medium ${
-                                  rec.priority === "high"
-                                    ? "bg-red-100 text-red-700"
-                                    : rec.priority === "medium"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : "bg-green-100 text-green-700"
-                                }`}
-                              >
-                                {rec.priority || "medium"} priority
-                              </span>
-                              <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                {rec.category || "general"}
-                              </span>
-                            </div>
-                            <h5 className="font-semibold text-gray-900 mt-2">
-                              {rec.title || "Recommendation"}
-                            </h5>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {rec.description || ""}
-                            </p>
-                            {rec.impact && (
-                              <p className="text-sm text-green-600 mt-2">
-                                📈 <strong>Impact:</strong> {rec.impact}
-                              </p>
-                            )}
-                            {rec.effort && (
-                              <p className="text-sm text-blue-600 mt-1">
-                                ⏱️ <strong>Effort:</strong> {rec.effort}
-                              </p>
-                            )}
-                            {rec.implementation && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded">
-                                <p className="text-xs text-gray-600">
-                                  <strong>Implementation:</strong>{" "}
-                                  {rec.implementation}
-                                </p>
+                {/* Recommendations Tab */}
+                {activeTab === "recommendations" && (
+                  <div className="space-y-4">
+                    {/* Critical Issues and Implementation Roadmap Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Critical Issues */}
+                      {auditReport?.criticalIssues &&
+                        auditReport.criticalIssues.length > 0 && (
+                          <div className="bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-6 border border-red-200/50 shadow-lg">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg">
+                                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900">
+                                  Critical Issues
+                                </h3>
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Strengths & Quick Wins */}
-                {((auditReport?.strengths &&
-                  auditReport.strengths.length > 0) ||
-                  (auditReport?.quickWins &&
-                    auditReport.quickWins.length > 0)) && (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Strengths */}
-                    {auditReport?.strengths &&
-                      auditReport.strengths.length > 0 && (
-                        <div className="p-4 bg-green-50 rounded-lg">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                            <HeartIcon className="h-5 w-5 text-green-600 mr-2" />
-                            Strengths
-                          </h4>
-                          <ul className="space-y-2">
-                            {auditReport.strengths.map((strength, index) => (
-                              <li
-                                key={index}
-                                className="flex items-start space-x-2"
-                              >
-                                <CheckCircleIcon className="h-4 w-4 text-green-600 mt-0.5" />
-                                <span className="text-sm text-gray-700">
-                                  {strength}
+                              <div className="text-right">
+                                <span className="text-2xl font-bold text-red-600">
+                                  {auditReport.criticalIssues.length}
                                 </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                    {/* Quick Wins */}
-                    {auditReport?.quickWins &&
-                      auditReport.quickWins.length > 0 && (
-                        <div className="p-4 bg-orange-50 rounded-lg">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                            ⚡ Quick Wins
-                          </h4>
-                          <div className="space-y-3">
-                            {(auditReport?.quickWins || []).map(
-                              (quickWin, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-white p-3 rounded-lg border-l-4 border-orange-400"
-                                >
-                                  {typeof quickWin === "string" ? (
-                                    // Handle simple string format (backward compatibility)
-                                    <div className="flex items-start space-x-2">
-                                      <span className="text-orange-600 font-bold text-sm">
-                                        ▶
-                                      </span>
-                                      <span className="text-sm text-gray-700">
-                                        {quickWin}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    // Handle enhanced object format
-                                    <div>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <h5 className="font-semibold text-gray-900 text-sm">
-                                          {quickWin.title}
-                                        </h5>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                                            {quickWin.timeToImplement}
-                                          </span>
-                                          <span
-                                            className={`text-xs px-2 py-1 rounded ${
-                                              quickWin.roiPotential === "High"
-                                                ? "bg-green-100 text-green-700"
-                                                : quickWin.roiPotential ===
-                                                  "Medium"
-                                                ? "bg-yellow-100 text-yellow-700"
-                                                : "bg-blue-100 text-blue-700"
-                                            }`}
-                                          >
-                                            {quickWin.roiPotential} ROI
-                                          </span>
-                                        </div>
+                                <span className="text-sm text-red-300 font-medium">
+                                  {auditReport.criticalIssues.length === 1
+                                    ? " issue"
+                                    : " issues"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              {auditReport.criticalIssues.map(
+                                (issue, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-white/70 rounded-xl p-4 border border-red-200/50"
+                                  >
+                                    <div className="flex items-start justify-between mb-3">
+                                      <h4 className="text-base font-semibold text-slate-900 flex-1">
+                                        {issue.title}
+                                      </h4>
+                                      <div className="flex gap-2 ml-3">
+                                        <span
+                                          className={`px-2 py-1 rounded-md text-xs font-medium ${getSeverityColor(
+                                            issue.severity
+                                          )}`}
+                                        >
+                                          {issue.severity}
+                                        </span>
                                       </div>
-                                      <p className="text-sm text-gray-600 mb-2">
-                                        {quickWin.implementation}
-                                      </p>
-                                      <p className="text-xs text-green-600">
-                                        📈 <strong>Impact:</strong>{" "}
-                                        {quickWin.expectedImpact}
-                                      </p>
                                     </div>
-                                  )}
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                )}
+                                    <p className="text-slate-700 text-sm mb-3">
+                                      {issue.description}
+                                    </p>
 
-                {/* Critical Issues */}
-                {auditReport?.criticalIssues &&
-                  auditReport.criticalIssues.length > 0 && (
-                    <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <h4 className="text-lg font-semibold text-red-900 mb-3 flex items-center">
-                        <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mr-2" />
-                        Critical Issues
-                      </h4>
-                      <div className="space-y-4">
-                        {auditReport.criticalIssues.map((issue, index) => (
-                          <div
-                            key={index}
-                            className="bg-white p-4 rounded-lg border-l-4 border-red-500"
-                          >
-                            {typeof issue === "string" ? (
-                              // Handle simple string format (backward compatibility)
-                              <div className="flex items-start space-x-2">
-                                <ExclamationTriangleIcon className="h-4 w-4 text-red-600 mt-0.5" />
-                                <span className="text-sm text-red-700">
-                                  {issue}
-                                </span>
-                              </div>
-                            ) : (
-                              // Handle enhanced object format
-                              <div>
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex items-center space-x-2">
-                                    <span
-                                      className={`px-2 py-1 rounded text-xs font-medium ${
-                                        issue.severity === "high"
-                                          ? "bg-red-100 text-red-700"
-                                          : issue.severity === "medium"
-                                          ? "bg-yellow-100 text-yellow-700"
-                                          : "bg-orange-100 text-orange-700"
-                                      }`}
-                                    >
-                                      {issue.severity} severity
-                                    </span>
-                                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                      {issue.category}
-                                    </span>
-                                  </div>
-                                </div>
-                                <h5 className="font-semibold text-red-900 mb-2">
-                                  {issue.title}
-                                </h5>
-                                <p className="text-sm text-red-700 mb-2">
-                                  {issue.description}
-                                </p>
-                                {issue.businessImpact && (
-                                  <p className="text-sm text-red-600 mb-2">
-                                    💼 <strong>Business Impact:</strong>{" "}
-                                    {issue.businessImpact}
-                                  </p>
-                                )}
-                                {issue.uxLawViolated && (
-                                  <p className="text-sm text-purple-600 mb-2">
-                                    🧠 <strong>UX Law:</strong>{" "}
-                                    {issue.uxLawViolated}
-                                  </p>
-                                )}
-                                {issue.wcagGuideline && (
-                                  <p className="text-sm text-blue-600 mb-2">
-                                    📋 <strong>WCAG:</strong>{" "}
-                                    {issue.wcagGuideline}
-                                  </p>
-                                )}
-                                {issue.implementation && (
-                                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                                    <h6 className="text-xs font-semibold text-gray-700 mb-1">
-                                      Implementation Guide
-                                    </h6>
-                                    {issue.implementation.effort && (
-                                      <p className="text-xs text-gray-600 mb-1">
-                                        ⏱️ <strong>Effort:</strong>{" "}
-                                        {issue.implementation.effort}
-                                      </p>
-                                    )}
-                                    {issue.implementation.priority && (
-                                      <p className="text-xs text-gray-600 mb-1">
-                                        🎯 <strong>Priority:</strong>{" "}
-                                        {issue.implementation.priority}
-                                      </p>
-                                    )}
-                                    {issue.implementation.codeSnippet && (
-                                      <div className="mt-2">
-                                        <p className="text-xs text-gray-600 mb-1">
-                                          💻 <strong>Code Fix:</strong>
+                                    {issue.businessImpact && (
+                                      <div className="mb-3 p-3 bg-white/80 rounded-lg border border-red-100">
+                                        <span className="font-medium text-slate-900 text-xs block mb-1">
+                                          Business Impact:
+                                        </span>
+                                        <p className="text-slate-700 text-xs">
+                                          {issue.businessImpact}
                                         </p>
-                                        <code className="text-xs bg-gray-800 text-green-400 p-2 rounded block">
-                                          {issue.implementation.codeSnippet}
-                                        </code>
                                       </div>
                                     )}
-                                    {issue.implementation.suggestions &&
-                                      Array.isArray(
-                                        issue.implementation.suggestions
-                                      ) && (
-                                        <div className="mt-2">
-                                          <p className="text-xs text-gray-600 mb-1">
-                                            💡 <strong>Suggestions:</strong>
-                                          </p>
-                                          <ul className="text-xs text-gray-600 list-disc list-inside">
-                                            {issue.implementation.suggestions.map(
-                                              (suggestion, idx) => (
-                                                <li key={idx}>{suggestion}</li>
-                                              )
-                                            )}
-                                          </ul>
+
+                                    {issue.implementation && (
+                                      <div className="bg-white/80 p-3 rounded-lg border border-red-100">
+                                        <div className="grid grid-cols-2 gap-3 mb-2">
+                                          <div>
+                                            <span className="text-xs font-medium text-slate-900 block">
+                                              Effort:
+                                            </span>
+                                            <p className="text-slate-700 text-xs">
+                                              {issue.implementation.effort}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <span className="text-xs font-medium text-slate-900 block">
+                                              Priority:
+                                            </span>
+                                            <p className="text-slate-700 text-xs">
+                                              {issue.implementation.priority}
+                                            </p>
+                                          </div>
                                         </div>
-                                      )}
+                                        {issue.wcagGuideline && (
+                                          <div className="mb-2">
+                                            <span className="text-xs font-medium text-slate-900 block">
+                                              WCAG:
+                                            </span>
+                                            <p className="text-slate-700 text-xs">
+                                              {issue.wcagGuideline}
+                                            </p>
+                                          </div>
+                                        )}
+                                        {issue.implementation.codeSnippet && (
+                                          <div>
+                                            <span className="text-xs font-medium text-slate-900 block mb-1">
+                                              Code Fix:
+                                            </span>
+                                            <pre className="p-2 bg-slate-100 rounded text-xs overflow-x-auto">
+                                              <code>
+                                                {
+                                                  issue.implementation
+                                                    .codeSnippet
+                                                }
+                                              </code>
+                                            </pre>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            )}
+                                )
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        )}
 
-                {/* Implementation Roadmap */}
-                {auditReport?.implementationRoadmap && (
-                  <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      🗺️ Implementation Roadmap
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {auditReport.implementationRoadmap.phase1 && (
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-                          <h5 className="font-semibold text-green-900 mb-2">
-                            Phase 1:{" "}
-                            {auditReport.implementationRoadmap.phase1.timeframe}
-                          </h5>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {auditReport.implementationRoadmap.phase1.priority}
-                          </p>
-                          <p className="text-xs text-green-600 mb-2">
-                            ⏱️ {auditReport.implementationRoadmap.phase1.effort}
-                          </p>
-                          <p className="text-xs text-green-600">
-                            📈{" "}
-                            {
-                              auditReport.implementationRoadmap.phase1
-                                .expectedImpact
-                            }
-                          </p>
-                          {auditReport.implementationRoadmap.phase1.tasks && (
-                            <ul className="text-xs text-gray-600 mt-2 list-disc list-inside">
-                              {auditReport.implementationRoadmap.phase1.tasks.map(
-                                (task, idx) => (
-                                  <li key={idx}>{task}</li>
-                                )
-                              )}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                      {auditReport.implementationRoadmap.phase2 && (
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-yellow-500">
-                          <h5 className="font-semibold text-yellow-900 mb-2">
-                            Phase 2:{" "}
-                            {auditReport.implementationRoadmap.phase2.timeframe}
-                          </h5>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {auditReport.implementationRoadmap.phase2.priority}
-                          </p>
-                          <p className="text-xs text-yellow-600 mb-2">
-                            ⏱️ {auditReport.implementationRoadmap.phase2.effort}
-                          </p>
-                          <p className="text-xs text-yellow-600">
-                            📈{" "}
-                            {
-                              auditReport.implementationRoadmap.phase2
-                                .expectedImpact
-                            }
-                          </p>
-                          {auditReport.implementationRoadmap.phase2.tasks && (
-                            <ul className="text-xs text-gray-600 mt-2 list-disc list-inside">
-                              {auditReport.implementationRoadmap.phase2.tasks.map(
-                                (task, idx) => (
-                                  <li key={idx}>{task}</li>
-                                )
-                              )}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                      {auditReport.implementationRoadmap.phase3 && (
-                        <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-                          <h5 className="font-semibold text-blue-900 mb-2">
-                            Phase 3:{" "}
-                            {auditReport.implementationRoadmap.phase3.timeframe}
-                          </h5>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {auditReport.implementationRoadmap.phase3.priority}
-                          </p>
-                          <p className="text-xs text-blue-600 mb-2">
-                            ⏱️ {auditReport.implementationRoadmap.phase3.effort}
-                          </p>
-                          <p className="text-xs text-blue-600">
-                            📈{" "}
-                            {
-                              auditReport.implementationRoadmap.phase3
-                                .expectedImpact
-                            }
-                          </p>
-                          {auditReport.implementationRoadmap.phase3.tasks && (
-                            <ul className="text-xs text-gray-600 mt-2 list-disc list-inside">
-                              {auditReport.implementationRoadmap.phase3.tasks.map(
-                                (task, idx) => (
-                                  <li key={idx}>{task}</li>
-                                )
-                              )}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Design System Recommendations */}
-                {auditReport?.designSystemRecommendations && (
-                  <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <CogIcon className="h-5 w-5 text-slate-600 mr-2" />
-                      🔧 Design System Recommendations
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Component Library */}
-                      {auditReport.designSystemRecommendations
-                        .componentLibrary && (
-                        <div className="bg-white p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-semibold text-gray-900">
-                              Component Library
-                            </h5>
-                            {auditReport.designSystemRecommendations
-                              .componentLibrary.score && (
-                              <span className="text-sm font-bold text-slate-600">
+                      {/* Implementation Roadmap */}
+                      {auditReport?.implementationRoadmap && (
+                        <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 rounded-2xl p-6 border border-blue-200/50 shadow-lg">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 rounded-lg">
+                                <ClockIcon className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-slate-900">
+                                Implementation Roadmap
+                              </h3>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold text-blue-600">
                                 {
-                                  auditReport.designSystemRecommendations
-                                    .componentLibrary.score
+                                  Object.keys(auditReport.implementationRoadmap)
+                                    .length
                                 }
-                                /100
                               </span>
-                            )}
+                              <span className="text-sm text-blue-300 font-medium">
+                                {Object.keys(auditReport.implementationRoadmap)
+                                  .length === 1
+                                  ? " phase"
+                                  : " phases"}
+                              </span>
+                            </div>
                           </div>
-                          <div className="space-y-2 text-sm">
-                            <p>
-                              <strong>Consistency:</strong>{" "}
-                              {
-                                auditReport.designSystemRecommendations
-                                  .componentLibrary.consistency
-                              }
-                            </p>
-                            <p>
-                              <strong>Scalability:</strong>{" "}
-                              {
-                                auditReport.designSystemRecommendations
-                                  .componentLibrary.scalability
-                              }
-                            </p>
-                            {auditReport.designSystemRecommendations
-                              .componentLibrary.recommendations && (
-                              <div>
-                                <h6 className="text-xs font-semibold text-gray-700 mt-2 mb-1">
-                                  Recommendations:
-                                </h6>
-                                <ul className="text-xs text-gray-600 list-disc list-inside">
-                                  {auditReport.designSystemRecommendations.componentLibrary.recommendations.map(
-                                    (rec, idx) => (
-                                      <li key={idx}>{rec}</li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Token System */}
-                      {auditReport.designSystemRecommendations.tokenSystem && (
-                        <div className="bg-white p-4 rounded-lg">
-                          <h5 className="font-semibold text-gray-900 mb-2">
-                            Token System
-                          </h5>
-                          <div className="space-y-2 text-sm">
+                          <div className="space-y-3">
                             {Object.entries(
-                              auditReport.designSystemRecommendations
-                                .tokenSystem
-                            ).map(([key, value]) => (
-                              <p key={key}>
-                                <strong className="capitalize">{key}:</strong>{" "}
-                                {value}
-                              </p>
+                              auditReport.implementationRoadmap
+                            ).map(([phaseKey, phase], index) => (
+                              <div
+                                key={phaseKey}
+                                className="bg-white/70 rounded-xl p-4 border border-blue-200/50"
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="text-base font-semibold text-slate-900 capitalize">
+                                    {phaseKey}
+                                  </h4>
+                                  <div className="text-right text-sm">
+                                    <div className="font-medium text-blue-600">
+                                      {phase.timeframe}
+                                    </div>
+                                    <div className="text-slate-600">
+                                      {phase.effort}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mb-3">
+                                  <span className="text-xs font-medium text-slate-900">
+                                    Priority:
+                                  </span>
+                                  <span className="ml-2 text-blue-600 text-xs font-medium">
+                                    {phase.priority}
+                                  </span>
+                                </div>
+                                <div className="mb-3">
+                                  <span className="text-xs font-medium text-slate-900 block mb-2">
+                                    Tasks:
+                                  </span>
+                                  <div className="space-y-1">
+                                    {phase.tasks.map((task, taskIndex) => (
+                                      <div
+                                        key={taskIndex}
+                                        className="flex items-start space-x-2"
+                                      >
+                                        <CheckCircleIcon className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-slate-700 text-xs">
+                                          {task}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="bg-white/80 p-3 rounded-lg border border-blue-100">
+                                  <span className="text-xs font-medium text-slate-900 block mb-1">
+                                    Expected Impact:
+                                  </span>
+                                  <p className="text-slate-700 text-xs">
+                                    {phase.expectedImpact}
+                                  </p>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -1631,84 +1885,10 @@ const UXAudit = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Competitive Benchmark */}
-                {auditReport?.competitiveBenchmark && (
-                  <div className="mt-6 p-4 bg-cyan-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      📊 Competitive Benchmark
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white p-3 rounded-lg">
-                        <h5 className="font-semibold text-gray-900 mb-2">
-                          Industry Position
-                        </h5>
-                        <p className="text-sm text-gray-600">
-                          {auditReport.competitiveBenchmark.industryPosition}
-                        </p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg">
-                        <h5 className="font-semibold text-gray-900 mb-2">
-                          Opportunity Areas
-                        </h5>
-                        <ul className="text-sm text-gray-600 list-disc list-inside">
-                          {(
-                            auditReport.competitiveBenchmark.opportunityAreas ||
-                            []
-                          ).map((area, idx) => (
-                            <li key={idx}>{area}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg">
-                        <h5 className="font-semibold text-gray-900 mb-2">
-                          Strengths vs Competitors
-                        </h5>
-                        <ul className="text-sm text-green-600 list-disc list-inside">
-                          {(
-                            auditReport.competitiveBenchmark
-                              .strengthsVsCompetitors || []
-                          ).map((strength, idx) => (
-                            <li key={idx}>{strength}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg">
-                        <h5 className="font-semibold text-gray-900 mb-2">
-                          Gaps vs Leaders
-                        </h5>
-                        <ul className="text-sm text-red-600 list-disc list-inside">
-                          {(
-                            auditReport.competitiveBenchmark.gapsVsLeaders || []
-                          ).map((gap, idx) => (
-                            <li key={idx}>{gap}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Next Steps */}
-                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    🎯 Next Steps
-                  </h4>
-                  <ol className="space-y-2">
-                    {(auditReport?.nextSteps || []).map((step, index) => (
-                      <li key={index} className="flex items-start space-x-2">
-                        <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm text-gray-700">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            )}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
-        </div>
+        )}
       </div>
     </div>
   );

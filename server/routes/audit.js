@@ -123,13 +123,6 @@ router.post(
         }
       }
 
-      console.log("Starting UX audit analysis...", {
-        hasImage: !!req.file,
-        context: context || "general web application",
-        focusAreas: parsedFocusAreas || ["all"],
-        model,
-      });
-
       // Perform UX audit using AI with enhanced image analysis
       const auditResult = await performUXAuditWithAI({
         imageUrl,
@@ -144,25 +137,6 @@ router.post(
       if (!auditResult) {
         throw new Error("Failed to generate audit result");
       }
-
-      console.log("Raw AI audit result structure:", {
-        hasExecutiveSummary: !!auditResult?.executiveSummary,
-        hasDesignAnalysis: !!auditResult?.designAnalysis,
-        hasAccessibilityAudit: !!auditResult?.accessibilityAudit,
-        hasUsabilityAnalysis: !!auditResult?.usabilityAnalysis,
-        hasConversionOptimization: !!auditResult?.conversionOptimization,
-        hasResponsiveDesign: !!auditResult?.responsiveDesign,
-        hasUxWriting: !!auditResult?.uxWriting,
-        hasImplementationRoadmap: !!auditResult?.implementationRoadmap,
-        hasCompetitiveBenchmark: !!auditResult?.competitiveBenchmark,
-        hasDesignSystemRecommendations:
-          !!auditResult?.designSystemRecommendations,
-        hasCriticalIssues: !!auditResult?.criticalIssues,
-        hasQuickWins: !!auditResult?.quickWins,
-        overallScore: auditResult?.overallScore,
-        executiveSummaryScore: auditResult?.executiveSummary?.overallScore,
-        topLevelKeys: Object.keys(auditResult || {}),
-      });
 
       // Normalize audit result to ensure required fields exist
       const asArray = (v) => (Array.isArray(v) ? v : v ? [v] : []);
@@ -275,13 +249,7 @@ router.post(
           spacing: "No specific spacing recommendations",
           components: "No specific component recommendations",
         },
-        nextSteps:
-          asArray(auditResult?.nextSteps).length > 0
-            ? auditResult.nextSteps
-            : [
-                "Implement high-priority recommendations",
-                "Conduct user testing to validate changes",
-              ],
+        nextSteps: [], // Removed next steps generation
         competitorBenchmarks: asArray(auditResult?.competitorBenchmarks),
         metadata: {
           analysisDate: new Date().toISOString(),
@@ -297,40 +265,6 @@ router.post(
       const user = await User.findById(req.user.id);
       user.usage.auditsPerformed += 1;
       await user.save();
-
-      console.log("UX audit completed successfully", {
-        overallScore: normalizedAudit.overallScore,
-        categoriesCount: Object.keys(normalizedAudit.categories).length,
-        recommendationsCount: normalizedAudit.recommendations.length,
-        hasExecutiveSummary: !!normalizedAudit.executiveSummary,
-        hasDesignAnalysis: !!normalizedAudit.designAnalysis,
-        hasAccessibilityAudit: !!normalizedAudit.accessibilityAudit,
-        hasUsabilityAnalysis: !!normalizedAudit.usabilityAnalysis,
-        hasConversionOptimization: !!normalizedAudit.conversionOptimization,
-        hasResponsiveDesign: !!normalizedAudit.responsiveDesign,
-        hasUxWriting: !!normalizedAudit.uxWriting,
-        hasImplementationRoadmap: !!normalizedAudit.implementationRoadmap,
-        hasCompetitiveBenchmark: !!normalizedAudit.competitiveBenchmark,
-        hasDesignSystemRecommendations:
-          !!normalizedAudit.designSystemRecommendations,
-        finalResponseKeys: Object.keys(normalizedAudit),
-      });
-
-      console.log(
-        "📤 SENDING TO FRONTEND:",
-        JSON.stringify(
-          {
-            success: true,
-            message: "UX audit completed successfully",
-            data: {
-              audit: normalizedAudit,
-              imageUrl,
-            },
-          },
-          null,
-          2
-        )
-      );
 
       res.json({
         success: true,
@@ -368,7 +302,7 @@ router.post(
         ],
         strengths: ["Clean visual appearance"],
         quickWins: ["Review accessibility standards"],
-        nextSteps: ["Manual UX review recommended"],
+        nextSteps: [], // Removed next steps generation
         metadata: {
           analysisDate: new Date().toISOString(),
           context: context || "general web application",
@@ -830,8 +764,6 @@ router.post(
 
       // Finalize the PDF
       doc.end();
-
-      console.log(`PDF report generated successfully: ${filename}`);
     } catch (error) {
       console.error("PDF generation error:", error);
 

@@ -2230,14 +2230,6 @@ ${
       "shadows": "Good depth system, consider adding more subtle variants"
     }
   },
-  "nextSteps": [
-    "Immediately fix critical accessibility issues (color contrast, skip links)",
-    "A/B test new CTA copy variations to validate conversion improvements",
-    "Implement quick wins within 48 hours for immediate UX improvements",
-    "Schedule usability testing with 5-8 users to validate design decisions",
-    "Set up conversion tracking to measure impact of improvements",
-    "Plan Phase 2 enhancements based on initial fix performance data"
-  ],
   "categories": {
     "accessibility": {
       "score": 78,
@@ -2363,24 +2355,6 @@ const performUXAuditWithAI = async ({
       model,
     });
 
-    // Log the complete prompt being sent to Gemini
-    console.log("=".repeat(80));
-    console.log("📝 COMPLETE PROMPT SENT TO GEMINI:");
-    console.log("=".repeat(80));
-    console.log(aiPrompt);
-    console.log("=".repeat(80));
-    console.log("🔧 PROMPT CONFIGURATION:");
-    console.log({
-      context,
-      focusAreas,
-      hasDescription: !!description,
-      descriptionLength: description?.length || 0,
-      model,
-      hasImageUrl: !!imageUrl,
-      hasImageBuffer: !!imageBuffer,
-    });
-    console.log("=".repeat(80));
-
     const geminiModel = genAI.getGenerativeModel({
       model,
       generationConfig: {
@@ -2416,22 +2390,9 @@ const performUXAuditWithAI = async ({
         },
       ];
 
-      console.log("Sending image analysis request to Gemini...", {
-        model,
-        mimeType,
-        bufferSize: imageBuffer.length,
-        hasPrompt: !!aiPrompt,
-      });
-
       result = await geminiModel.generateContent(prompt);
     } else {
       // Text-only analysis
-      console.log("Sending text-only analysis request to Gemini...", {
-        model,
-        hasDescription: !!description,
-        context,
-        focusAreas,
-      });
 
       result = await geminiModel.generateContent(aiPrompt);
     }
@@ -2442,22 +2403,6 @@ const performUXAuditWithAI = async ({
 
     let responseText = result.response.text();
 
-    // Log the complete raw response from Gemini
-    console.log("=".repeat(80));
-    console.log("📥 COMPLETE RAW RESPONSE FROM GEMINI:");
-    console.log("=".repeat(80));
-    console.log(responseText);
-    console.log("=".repeat(80));
-    console.log("📊 RESPONSE METADATA:");
-    console.log({
-      responseLength: responseText.length,
-      startsWithBrace: responseText.startsWith("{"),
-      startsWithMarkdown: responseText.startsWith("```"),
-      containsJson: responseText.includes('"overallScore"'),
-      responseType: typeof responseText,
-    });
-    console.log("=".repeat(80));
-
     // Clean up the response
     responseText = responseText
       .replace(/```json\s*/gi, "")
@@ -2466,61 +2411,21 @@ const performUXAuditWithAI = async ({
       .replace(/^```$/gm, "")
       .trim();
 
-    console.log("📝 CLEANED RESPONSE (after removing markdown):");
-    console.log("=".repeat(80));
-    console.log(responseText);
-    console.log("=".repeat(80));
-
-    console.log("Received response from Gemini, parsing...", {
-      responseLength: responseText.length,
-      startsWithBrace: responseText.startsWith("{"),
-    });
-
     try {
       const audit = JSON.parse(responseText);
-
-      // Log the parsed JSON object
-      console.log("✅ SUCCESSFULLY PARSED JSON FROM GEMINI:");
-      console.log("=".repeat(80));
-      console.log(JSON.stringify(audit, null, 2));
-      console.log("=".repeat(80));
 
       // Normalize and validate the audit data
       const normalizedAudit = normalizeUXAudit(audit, context, focusAreas);
 
-      console.log("📋 FINAL NORMALIZED AUDIT RESULT:", {
-        overallScore: normalizedAudit.overallScore,
-        categoriesCount: Object.keys(normalizedAudit.categories || {}).length,
-        recommendationsCount: (normalizedAudit.recommendations || []).length,
-        hasDesignAnalysis: !!normalizedAudit.designAnalysis,
-        hasStrengths: (normalizedAudit.strengths || []).length,
-        hasQuickWins: (normalizedAudit.quickWins || []).length,
-      });
-
       return normalizedAudit;
     } catch (parseError) {
-      console.log("❌ JSON PARSING ERROR:");
-      console.log("=".repeat(80));
       console.error("JSON parsing error:", parseError.message);
-      console.log("Raw response (first 1000 chars):");
-      console.log(responseText.substring(0, 1000));
-      console.log("=".repeat(80));
 
       // Try to extract JSON from response if it's wrapped in other text
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        console.log("🔄 ATTEMPTING TO EXTRACT JSON FROM RESPONSE:");
-        console.log(
-          "Extracted JSON candidate:",
-          jsonMatch[0].substring(0, 200) + "..."
-        );
         try {
           const audit = JSON.parse(jsonMatch[0]);
-          console.log("✅ SUCCESSFULLY EXTRACTED AND PARSED JSON");
-          console.log(
-            "Extracted audit object:",
-            JSON.stringify(audit, null, 2)
-          );
           const normalizedAudit = normalizeUXAudit(audit, context, focusAreas);
           return normalizedAudit;
         } catch (secondParseError) {
@@ -2531,7 +2436,6 @@ const performUXAuditWithAI = async ({
         }
       }
 
-      console.log("⚠️ Falling back to default audit with context");
       return generateDefaultUXAuditWithContext(
         context,
         focusAreas,
@@ -2540,11 +2444,6 @@ const performUXAuditWithAI = async ({
     }
   } catch (error) {
     console.error("UX Audit AI Error:", error);
-    console.log("Error details:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.substring(0, 200),
-    });
 
     return generateDefaultUXAuditWithContext(context, focusAreas, description);
   }
@@ -2675,9 +2574,7 @@ const normalizeUXAudit = (audit, context, focusAreas) => {
     implementationRoadmap: audit.implementationRoadmap || null,
     competitiveBenchmark: audit.competitiveBenchmark || null,
     designSystemRecommendations: audit.designSystemRecommendations || null,
-    nextSteps: Array.isArray(audit.nextSteps)
-      ? audit.nextSteps
-      : ["Implement recommendations"],
+    nextSteps: [], // Removed next steps generation
     tags: Array.isArray(audit.tags)
       ? audit.tags
       : [context, "ux-audit", "recommendations"],
@@ -2781,7 +2678,7 @@ const generateDefaultUXAudit = () => ({
   ],
   strengths: ["Clean visual design", "Consistent layout structure"],
   quickWins: ["Optimize color contrast", "Add focus indicators"],
-  nextSteps: ["Conduct accessibility audit", "User testing"],
+  nextSteps: [], // Removed next steps generation
 });
 
 const generateDefaultUXAuditWithContext = (
