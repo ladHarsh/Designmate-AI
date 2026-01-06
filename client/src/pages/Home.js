@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   SparklesIcon,
   SwatchIcon,
@@ -10,102 +10,159 @@ import {
   ChartBarIcon,
   ArrowRightIcon,
   CheckIcon,
-} from '@heroicons/react/24/outline';
-import { useAuth } from '../contexts/AuthContext';
+} from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
 
 const features = [
   {
-    name: 'AI Layout Generator',
-    description: 'Generate intelligent layout structures based on your requirements using advanced AI.',
+    name: "AI Layout Generator",
+    description:
+      "Generate intelligent layout structures based on your requirements using advanced AI.",
     icon: ChartBarIcon,
-    href: '/layout-generator',
+    href: "/layout-generator",
+    color: "bg-blue-100 text-blue-600",
   },
   {
-    name: 'Color Palette Recommender',
-    description: 'Create brand-appropriate color schemes with accessibility compliance checking.',
+    name: "Color Palette Recommender",
+    description:
+      "Create brand-appropriate color schemes with accessibility compliance checking.",
     icon: SwatchIcon,
-    href: '/color-palette',
+    href: "/color-palette",
+    color: "bg-purple-100 text-purple-600",
   },
   {
-    name: 'Font Suggestion Tool',
-    description: 'Get industry-aligned font pairings that match your design tone and style.',
+    name: "Font Suggestion Tool",
+    description:
+      "Get industry-aligned font pairings that match your design tone and style.",
     icon: DocumentTextIcon,
-    href: '/font-suggestions',
+    href: "/font-suggestions",
+    color: "bg-green-100 text-green-600",
   },
   {
-    name: 'UX Audit Bot',
-    description: 'Analyze your designs for usability issues and accessibility compliance.',
+    name: "UX Audit Bot",
+    description:
+      "Analyze your designs for usability issues and accessibility compliance.",
     icon: EyeIcon,
-    href: '/ux-audit',
+    href: "/ux-audit",
+    color: "bg-orange-100 text-orange-600",
   },
   {
-    name: 'Design Trends Analyzer',
-    description: 'Track trending UI styles across platforms like Dribbble and Behance.',
+    name: "Design Trends Analyzer",
+    description:
+      "Track trending UI styles across platforms like Dribbble and Behance.",
     icon: ArrowTrendingUpIcon,
-    href: '/trends',
+    href: "/trends",
+    color: "bg-pink-100 text-pink-600",
   },
 ];
 
 const benefits = [
-  'Save hours of design research and iteration',
-  'Ensure accessibility compliance from the start',
-  'Stay updated with current design trends',
-  'Generate professional layouts instantly',
-  'Get expert-level design recommendations',
-  'Collaborate with AI-powered insights',
+  "Save hours of design research and iteration",
+  "Ensure accessibility compliance from the start",
+  "Stay updated with current design trends",
+  "Generate professional layouts instantly",
+  "Get expert-level design recommendations",
+  "Collaborate with AI-powered insights",
 ];
+
+// Animation variants for better performance
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5 },
+  },
+};
 
 const Home = () => {
   const { user } = useAuth();
 
+  // Set page title for SEO
+  useEffect(() => {
+    document.title =
+      "DesignMate AI - AI-Powered Design Assistant for UI/UX Designers";
+  }, []);
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden gradient-bg">
+      <section
+        className="relative overflow-hidden gradient-bg"
+        aria-labelledby="hero-heading"
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-accent-50/50"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          ></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-12 xs:py-16 lg:py-28">
           <div className="text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 mb-8">
-                <SparklesIcon className="h-4 w-4 mr-2 text-primary-600" />
+              <div className="inline-flex items-center px-3 xs:px-4 py-1.5 xs:py-2 bg-white/90 backdrop-blur-sm rounded-full text-xs xs:text-sm font-medium text-gray-700 mb-4 xs:mb-8 shadow-sm border border-gray-100">
+                <SparklesIcon className="h-3 w-3 xs:h-4 xs:w-4 mr-1.5 xs:mr-2 text-primary-600" />
                 Powered by Advanced AI
               </div>
-              
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Design Smarter with{' '}
+
+              <h1
+                id="hero-heading"
+                className="text-3xl xs:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 xs:mb-6 tracking-tight px-2"
+              >
+                Design Smarter with{" "}
                 <span className="gradient-text">AI Assistance</span>
               </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                Transform your design workflow with intelligent AI tools that generate layouts, 
-                suggest color palettes, recommend fonts, and audit your designs for optimal user experience.
+
+              <p className="text-base xs:text-lg md:text-xl text-gray-600 mb-6 xs:mb-10 max-w-3xl mx-auto leading-relaxed px-3">
+                Transform your design workflow with intelligent AI tools that
+                generate layouts, suggest color palettes, recommend fonts, and
+                audit your designs for optimal user experience.
               </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+              <div className="flex flex-col sm:flex-row gap-3 xs:gap-4 justify-center px-3">
                 {user ? (
                   <Link
                     to="/dashboard"
-                    className="btn-primary btn-lg inline-flex items-center"
+                    className="btn-primary btn-lg inline-flex items-center justify-center text-sm xs:text-base"
+                    aria-label="Go to your dashboard"
                   >
                     Go to Dashboard
-                    <ArrowRightIcon className="ml-2 h-5 w-5" />
+                    <ArrowRightIcon className="ml-2 h-4 w-4 xs:h-5 xs:w-5" />
                   </Link>
                 ) : (
                   <>
                     <Link
                       to="/register"
-                      className="btn-primary btn-lg inline-flex items-center"
+                      className="btn-primary btn-lg inline-flex items-center justify-center text-sm xs:text-base"
+                      aria-label="Get started for free"
                     >
                       Get Started Free
-                      <ArrowRightIcon className="ml-2 h-5 w-5" />
+                      <ArrowRightIcon className="ml-2 h-4 w-4 xs:h-5 xs:w-5" />
                     </Link>
                     <Link
                       to="/login"
-                      className="btn-secondary btn-lg"
+                      className="btn-secondary btn-lg text-sm xs:text-base"
+                      aria-label="Sign in to your account"
                     >
                       Sign In
                     </Link>
@@ -115,53 +172,87 @@ const Home = () => {
             </motion.div>
           </div>
         </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary-200 rounded-full opacity-20 animate-float"></div>
-        <div className="absolute top-40 right-20 w-16 h-16 bg-accent-200 rounded-full opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-20 left-20 w-12 h-12 bg-primary-300 rounded-full opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
+
+        {/* Floating elements - hidden on mobile for performance */}
+        <div
+          className="absolute top-20 left-10 w-20 h-20 bg-primary-200 rounded-full opacity-20 animate-float hidden md:block"
+          aria-hidden="true"
+        ></div>
+        <div
+          className="absolute top-40 right-20 w-16 h-16 bg-accent-200 rounded-full opacity-20 animate-float hidden md:block"
+          style={{ animationDelay: "1s" }}
+          aria-hidden="true"
+        ></div>
+        <div
+          className="absolute bottom-20 left-20 w-12 h-12 bg-primary-300 rounded-full opacity-20 animate-float hidden md:block"
+          style={{ animationDelay: "2s" }}
+          aria-hidden="true"
+        ></div>
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <section
+        className="py-12 xs:py-16 lg:py-24 bg-white"
+        aria-labelledby="features-heading"
+      >
+        <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-8 xs:mb-12 lg:mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <span className="inline-block px-2.5 xs:px-3 py-1 text-xs xs:text-sm font-medium text-primary-700 bg-primary-100 rounded-full mb-3 xs:mb-4">
+              Features
+            </span>
+            <h2
+              id="features-heading"
+              className="text-2xl xs:text-3xl md:text-4xl font-bold text-gray-900 mb-3 xs:mb-4 px-2"
+            >
               Everything you need to design better
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Our AI-powered tools help you create professional designs faster and more efficiently.
+            <p className="text-sm xs:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-3">
+              Our AI-powered tools help you create professional designs faster
+              and more efficiently.
             </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-6 lg:gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {features.map((feature) => (
               <motion.div
                 key={feature.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="card-hover p-6"
+                variants={itemVariants}
+                className="card p-4 xs:p-6"
               >
-                <div className="h-12 w-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary-600" />
+                <div
+                  className={`h-10 w-10 xs:h-12 xs:w-12 rounded-xl flex items-center justify-center mb-3 xs:mb-4 ${feature.color}`}
+                >
+                  <feature.icon className="h-5 w-5 xs:h-6 xs:w-6" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg xs:text-xl font-semibold text-gray-900 mb-2">
                   {feature.name}
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-sm xs:text-base text-gray-600 mb-3 xs:mb-4 leading-relaxed">
                   {feature.description}
                 </p>
                 <Link
                   to={feature.href}
-                  className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium"
+                  className="inline-flex items-center text-sm xs:text-base text-primary-600 hover:text-primary-700 font-medium"
+                  aria-label={`Learn more about ${feature.name}`}
                 >
-                  Learn more
+                  Get Started
                   <ArrowRightIcon className="ml-1 h-4 w-4" />
                 </Link>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -179,9 +270,10 @@ const Home = () => {
                 Why designers choose DesignMate AI
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                Join thousands of designers who have transformed their workflow with our AI-powered tools.
+                Join thousands of designers who have transformed their workflow
+                with our AI-powered tools.
               </p>
-              
+
               <div className="space-y-4">
                 {benefits.map((benefit, index) => (
                   <motion.div
@@ -200,7 +292,7 @@ const Home = () => {
                 ))}
               </div>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -226,7 +318,7 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Floating cards */}
               <div className="absolute -top-4 -right-4 card p-4 w-32">
                 <div className="flex items-center space-x-2">
@@ -234,7 +326,7 @@ const Home = () => {
                   <span className="text-xs text-gray-600">AI Generated</span>
                 </div>
               </div>
-              
+
               <div className="absolute -bottom-4 -left-4 card p-4 w-40">
                 <div className="text-xs text-gray-600">
                   <div className="font-medium">Accessibility Score</div>
@@ -259,39 +351,135 @@ const Home = () => {
               Ready to transform your design workflow?
             </h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of designers who are already using AI to create better designs faster.
+              Join thousands of designers who are already using AI to create
+              better designs faster.
             </p>
-            
+
             {user ? (
               <Link
                 to="/dashboard"
-                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center"
+                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg"
+                aria-label="Continue to your dashboard"
               >
                 Continue to Dashboard
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
               </Link>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/register"
-                  className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center"
-                >
-                  Start Free Trial
-                  <ArrowRightIcon className="ml-2 h-5 w-5" />
-                </Link>
-                <Link
-                  to="/explore"
-                  className="btn-lg border-2 border-white text-white hover:bg-white hover:text-primary-600"
-                >
-                  Explore Features
-                </Link>
-              </div>
+              <Link
+                to="/register"
+                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg"
+                aria-label="Sign up for an account"
+              >
+                Get Started Free
+                <ArrowRightIcon className="ml-2 h-5 w-5" />
+              </Link>
             )}
           </motion.div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Brand */}
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center mb-4">
+                <SparklesIcon className="h-8 w-8 text-primary-500" />
+                <span className="ml-2 text-xl font-bold text-white">
+                  DesignMate AI
+                </span>
+              </div>
+              <p className="text-gray-400 max-w-md">
+                AI-powered design assistant helping designers create better user
+                experiences faster.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Features</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/layout-generator"
+                    className="hover:text-white transition-colors"
+                  >
+                    Layout Generator
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/color-palette"
+                    className="hover:text-white transition-colors"
+                  >
+                    Color Palette
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/font-suggestions"
+                    className="hover:text-white transition-colors"
+                  >
+                    Font Suggestions
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/ux-audit"
+                    className="hover:text-white transition-colors"
+                  >
+                    UX Audit
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* More Links */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Account</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/trends"
+                    className="hover:text-white transition-colors"
+                  >
+                    Design Trends
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/login"
+                    className="hover:text-white transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/register"
+                    className="hover:text-white transition-colors"
+                  >
+                    Get Started Free
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm">
+              &copy; {new Date().getFullYear()} DesignMate AI. All rights
+              reserved.
+            </p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <span className="text-sm">Made with ❤️ for designers</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
 
-export default Home; 
+export default Home;

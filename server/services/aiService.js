@@ -95,59 +95,6 @@ async function callGeminiJSONWithRetry(
   }
 }
 
-// Brand Intelligence — Analysis
-async function analyzeBrand(rawExtract) {
-  const system =
-    "You are a senior brand strategist and web design system expert. Output must be strict JSON matching the provided schema, with no extra text.";
-  const schema = `{
-  "brandName": "string",
-  "summary": "string",
-  "tone": {"primary": "string", "adjectives": ["string"]},
-  "colors": {"primary": "#RRGGBB", "secondary": "#RRGGBB", "accent": ["#RRGGBB"], "neutrals": ["#RRGGBB"]},
-  "fonts": {
-    "heading": {"name": "string", "fallbacks": ["string"], "source": "google|system|file|unknown"},
-    "body": {"name": "string", "fallbacks": ["string"], "source": "google|system|file|unknown"}
-  },
-  "imagery": {"styles": ["string"], "keywords": ["string"], "heroStyle": "string"},
-  "layoutPreferences": {"density": "airy|balanced|dense", "cornerStyle": "rounded|sharp|mixed", "sectionOrder": ["Hero","Features","Testimonials","CTA","Footer"]},
-  "alternatives": {"colorPalettes": [ {"name": "string", "colors": ["#RRGGBB"]} ], "fontPairs": [ {"heading": "string", "body": "string"} ]}
-}`;
-  const user = `Analyze the following brand raw extract and produce a BrandProfile JSON.\n\nSchema:\n${schema}\n\nInput:\n${JSON.stringify(
-    rawExtract
-  )}\n\nRules:\n- Derive colors from CSS variables and image palettes; normalize to hex.\n- Derive fonts from @font-face, Google Fonts links; else infer by style.\n- Keep adjectives concrete (e.g., "minimalist", "bold").\n- Output valid JSON only.`;
-  const primary = process.env.GEMINI_MODEL || "gemini-2.5-pro";
-  return callGeminiJSONWithRetry(primary, system, user);
-}
-
-// Brand Intelligence — Site Generation
-async function generateSite(brandProfile) {
-  const system =
-    "You are a principal front-end engineer and brand designer. Produce clean, accessible, production-ready HTML and CSS, strictly following the provided brand profile. Output strict JSON as per schema.";
-  const schema = `{
-  "sections": [
-    {"type": "Hero", "html": "string", "css": "string"},
-    {"type": "Features", "html": "string", "css": "string"},
-    {"type": "Testimonials", "html": "string", "css": "string"},
-    {"type": "CTA", "html": "string", "css": "string"},
-    {"type": "Footer", "html": "string", "css": "string"}
-  ],
-  "globalCss": "string",
-  "assets": {"heroImageUrl": "string|null"}
-}`;
-  const user = `Generate a homepage using the BrandProfile.\n\nSchema:\n${schema}\n\nConstraints:\n- Use these colors and fonts from the profile.\n- Keep CSS scoped under a root class .brand-root.\n- Use semantic HTML5, WCAG AA contrast.\n- Avoid external frameworks in output.\n- If no hero image URL is provided, set assets.heroImageUrl to null and use a gradient background.\n\nInput BrandProfile:\n${JSON.stringify(
-    brandProfile
-  )}\n\nOutput JSON only.`;
-  const primary = process.env.GEMINI_MODEL || "gemini-2.5-pro";
-  const json = await callGeminiJSONWithRetry(primary, system, user);
-  // Flatten for storage convenience
-  const html = (json.sections || []).map((s) => s.html).join("\n");
-  const css = [
-    json.globalCss || "",
-    ...(json.sections || []).map((s) => s.css || ""),
-  ].join("\n");
-  return { ...json, html, css };
-}
-
 // Helper function to parse color schemes and handle custom combinations
 const parseColorScheme = (colorScheme, colorSchemes) => {
   if (!colorScheme || typeof colorScheme !== "string") {
@@ -222,26 +169,36 @@ const buildPrompt = (options = {}) => {
     colorScheme = "blue",
     targetAudience = "general",
     customBrief = "",
-    model = "gemini-2.5-pro", // 👈 Pass 'gemini-2.5-pro' or 'gemini-2.5-flash'
+    model = "gemini-2.5-flash", // 👈 Pass 'gemini-2.5-flash' or 'gemini-2.5-flash'
   } = options;
 
   // Model-specific tuning
   const depthFocus = model.includes("pro");
 
   const componentMap = {
-    header: "Sticky header with logo, navigation, and CTA button",
-    hero: "Full-width hero section with CTA and background image",
-    features: "Feature grid with icons/images and bold headlines",
-    pricing: "Pricing plans with comparison tables",
-    testimonials: "Customer testimonials with names and company logos",
-    blog: "Blog/news preview grid",
-    newsletter: "Newsletter signup with validation",
-    contact: "Contact form with company info",
-    footer: "Footer with navigation, company info, social media links",
-    gallery: "Grid gallery with lightbox functionality",
-    faq: "FAQ accordion with Q&A",
-    sidebar: "Sidebar with quick links or extra content",
-    socialMedia: "Social media icons with hover effects",
+    header:
+      "Professional navigation bar with clean logo, organized menu items, and subtle call-to-action button",
+    hero: "Executive-quality hero section with compelling headline, professional imagery, and clear value proposition",
+    features:
+      "Clean feature showcase with organized grid layout, professional icons, and concise descriptions",
+    pricing:
+      "Clean pricing comparison with organized tables, clear value propositions, and professional styling",
+    testimonials:
+      "Professional customer testimonials with credible presentation and clean typography",
+    blog: "Executive blog preview with organized grid layout and professional content presentation",
+    newsletter:
+      "Professional newsletter signup with clean form design and clear value proposition",
+    contact:
+      "Business-grade contact section with organized information and professional form styling",
+    footer:
+      "Professional footer with organized navigation, company information, and clean social media integration",
+    gallery:
+      "Beautiful single-image carousel with 5-6 contextually relevant, high-quality images that perfectly match the website's industry and content. Display one image at a time with smooth transitions, elegant navigation arrows, dot indicators, and professional styling - clean, modern, and visually appealing",
+    faq: "Professional FAQ section with clean accordion design and organized Q&A presentation",
+    sidebar:
+      "Clean sidebar with organized quick links and professional content presentation",
+    socialMedia:
+      "Professional social media integration with clean icons and subtle hover effects",
     productGrid: "Product/service cards with pricing and ratings",
     dashboardPreview: "Dashboard preview cards/tables (for apps)",
     ctaBanner: "Prominent call-to-action banner",
@@ -252,13 +209,20 @@ const buildPrompt = (options = {}) => {
   };
 
   const styleGuidelines = {
-    minimal: "Clean, white space, simple typography, subtle shadows",
-    modern: "Bold typography, gradients, rounded corners, modern spacing",
-    vintage: "Serif fonts, muted colors, decorative elements, classic layout",
+    minimal:
+      "Ultra-clean design with generous white space, crisp typography (Inter/Helvetica), subtle micro-interactions, precise alignment, and sophisticated use of negative space - think Apple/Stripe level simplicity",
+    modern:
+      "Professional typography (system fonts), refined color gradients, subtle rounded corners (8-12px), consistent spacing grid (8px base), elegant micro-animations, and premium visual hierarchy",
+    vintage:
+      "Elegant serif fonts (Georgia/Times), sophisticated muted palettes, refined decorative elements, classic grid systems, and timeless layout principles",
     corporate:
-      "Professional, structured, conservative colors, formal typography",
+      "Executive-level professional design with structured layouts, conservative premium colors (#1a1a1a, #f8f9fa), formal yet approachable typography, and enterprise-grade visual consistency",
     creative:
-      "Bold colors, unique layouts, artistic elements, experimental design",
+      "Sophisticated artistic elements, carefully curated color palettes, innovative yet usable layouts, premium creative typography, and thoughtful experimental design patterns",
+    professional:
+      "Business-grade design with clean typography, consistent branding elements, professional color schemes, structured layouts, and executive presentation quality",
+    playful:
+      "Friendly yet professional design with subtle animations, approachable colors, rounded elements, and engaging but tasteful visual elements",
   };
 
   const industryContent = {
@@ -459,18 +423,27 @@ ${componentDescriptions.map((c) => `- ${c}`).join("\n")}
 COMPONENT IMAGE REQUIREMENTS:
 - Header: Use a logo or brand image (SVG or PNG) - ONLY in header content area
 - Hero: Use a high-quality background image or hero image (1200x800px minimum) - ONLY in hero section
-- Features: Use relevant icons or images for each feature (400x300px) - ONLY in features section
+- Features: Use relevant icons or images for each feature (400x300px) - ONLY in features section, ONE IMAGE PER FEATURE CARD MAXIMUM
 - Pricing: Use checkmark icons or pricing-related images - ONLY in pricing section
 - Testimonials: Use professional headshot images (200x200px, circular) - ONLY in testimonials section
 - Blog: Use featured image for blog posts (600x400px) - ONLY in blog section
 - Newsletter: Use newsletter or email-related images - ONLY in newsletter section
 - Contact: Use contact form or communication images - ONLY in contact section
 - Footer: NO IMAGES ALLOWED - Footer should only contain text, links, and social media icons (SVG)
-- Gallery: Use multiple high-quality images in grid layout - ONLY in gallery section
+- Gallery: Create beautiful single-image carousel with exactly 5-6 contextually relevant images (1200x800px each) that perfectly match the website's industry/content. Display ONE image at a time with smooth CSS transitions, elegant navigation arrows (left/right), dot pagination indicators, and professional carousel styling. Images must be thematically consistent and relevant to the site content - ONLY in gallery section
 - FAQ: Use question mark or help icons - ONLY in FAQ section
 - Sidebar: Use relevant sidebar images or icons - ONLY in sidebar section
 - Social Media: Use social media platform icons (SVG) - ONLY in appropriate sections
 - Product Grid: Use product images with consistent dimensions - ONLY in product grid section
+
+CRITICAL IMAGE RESTRICTIONS:
+- NEVER place multiple images in a single feature card or text content area
+- NEVER use random people photos that don't match the content context
+- NEVER place images inside paragraph text or between text elements
+- Each feature card should have EXACTLY ONE relevant image that matches its heading and description
+- Images must be contextually relevant to the specific content they accompany
+- NO placeholder or stock people photos unless specifically requested for testimonials
+- Verify each image ID corresponds to appropriate content before use
 - Dashboard Preview: Use dashboard or analytics images - ONLY in dashboard section
 - CTA Banner: Use compelling call-to-action images - ONLY in CTA sections
 - Onboarding Steps: Use step-by-step process images - ONLY in onboarding section
@@ -484,6 +457,14 @@ CRITICAL IMAGE PLACEMENT RULES:
 - NO IMAGES in <nav> section (use SVG icons only)
 - Images should ONLY be in content sections like hero, features, gallery, etc.
 - Footer should contain only text links and SVG social media icons
+
+HTML STRUCTURE REQUIREMENTS:
+- Each feature card must follow this EXACT structure: <div class="feature-card"> <img.../> <h3>Title</h3> <p>Description</p> </div>
+- NEVER place additional images after the description paragraph
+- NEVER place multiple images in the same content container
+- Images must be the FIRST element inside their container, followed by text content
+- Verify each image placement serves a specific structural purpose
+- Review final HTML for any orphaned or misplaced image tags
 
 CONTENT:
 - Hero Title: ${industryData.heroTitle}
@@ -537,7 +518,7 @@ IMAGE REQUIREMENTS:
   * Hero: High-quality background or featured images
   * Features: Relevant icons or product images
   * Testimonials: Professional headshots
-  * Gallery: Multiple high-quality images
+  * Gallery: CLEAN SINGLE-IMAGE CAROUSEL with exactly 5-6 contextually relevant images (1200x800px) that perfectly match the website's content/industry. Display ONE image at a time with smooth transitions, elegant left/right navigation arrows, dot pagination, and beautiful professional styling
   * Products: Clear product photos with consistent styling
 
 ${customBrief ? `CUSTOM BRIEF: ${customBrief}` : ""}
@@ -555,16 +536,37 @@ IMAGE LOADING REQUIREMENTS:
 - NO PLACEHOLDER TEXT: Never use text like "Image placeholder" or "Product image"
 - NO BROKEN LINKS: Every image URL must be tested and working
 
+PROFESSIONAL DESIGN PRINCIPLES:
+- Use 8px spacing grid system for perfect alignment: margin/padding in multiples of 8px (8px, 16px, 24px, 32px, 48px, 64px)
+- Professional typography scale: 12px, 14px, 16px, 18px, 24px, 32px, 48px, 64px
+- Consistent color system: max 3-4 main colors with proper contrast ratios (4.5:1 minimum)
+- Use professional fonts: Inter, System UI, Helvetica Neue, Arial for sans-serif; Georgia, Times New Roman for serif
+- Apply subtle shadows for depth: box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)
+- Use consistent border radius: 4px for small elements, 8px for cards, 12px for large containers
+
 CSS LAYOUT GUIDELINES:
-- Use CSS Grid for complex layouts: display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-- Use Flexbox for component alignment: display: flex; align-items: center; justify-content: space-between;
-- Prevent text overflow: word-wrap: break-word; overflow-wrap: break-word; hyphens: none;
-- Ensure proper text alignment: text-align: left/center/right; vertical-align: top/middle/bottom;
-- Use consistent spacing: margin: 0; padding: 1rem; gap: 1rem;
-- Avoid awkward line breaks: white-space: nowrap; or use proper line-height
-- Use proper column layouts: column-count: 2; column-gap: 2rem; column-fill: balance;
-- Ensure responsive text: font-size: clamp(1rem, 2.5vw, 1.5rem);
-- Use proper container widths: max-width: 1200px; margin: 0 auto; padding: 0 1rem;
+- Professional CSS Grid layouts: display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px;
+- Clean Flexbox alignment: display: flex; align-items: center; justify-content: space-between; gap: 16px;
+- Prevent text overflow professionally: word-wrap: break-word; overflow-wrap: break-word; line-height: 1.6;
+- Perfect text alignment: text-align: left/center; line-height: 1.5; letter-spacing: -0.01em;
+- Consistent professional spacing: margin: 0; padding: 16px 24px; gap: 24px;
+- Professional typography: font-weight: 400|500|600; font-size: clamp(16px, 2vw, 18px);
+- Optimal container widths: max-width: 1200px; margin: 0 auto; padding: 0 24px;
+- Professional responsive breakpoints: mobile (320px+), tablet (768px+), desktop (1024px+)
+
+GALLERY/CAROUSEL PROFESSIONAL REQUIREMENTS (when gallery component is requested):
+- Create beautiful single-image carousel that displays ONE image at a time (not masonry/grid)
+- Use exactly 5-6 contextually relevant images (1200x800px) that match the website's industry/content theme
+- Implement smooth CSS transitions: transition: all 0.3s ease-in-out;
+- Add elegant navigation arrows: left/right arrows with subtle hover effects and smooth transitions
+- Include dot pagination indicators: clean circles that show current position with active state styling
+- Apply professional carousel container: centered layout with proper spacing and subtle shadows
+- Use CSS-only carousel functionality with smooth slide animations (translateX transforms)
+- Images should fill the container beautifully: object-fit: cover; border-radius: 12px;
+- Add fade or slide transitions between images for smooth visual flow
+- Ensure all images are thematically consistent and relevant to the site's purpose/industry
+- Mobile-responsive with touch-friendly navigation and swipe support
+- Professional loading states and elegant fallback handling
 
 DELIVERABLE:
 A single standalone HTML5 file that runs immediately in a browser with all images rendering correctly and proper, professional code quality.`;
@@ -582,7 +584,7 @@ const generateLayoutWithAI = async ({
   colorScheme = "",
   industry = "",
   targetAudience = "",
-  model = "gemini-2.5-pro",
+  model = "gemini-2.5-flash",
 }) => {
   try {
     // Validate required parameters
@@ -620,12 +622,26 @@ const generateLayoutWithAI = async ({
         return await geminiModel.generateContent(aiPrompt);
       } catch (sdkErr) {
         const msg = String(sdkErr?.message || sdkErr);
+        const status = sdkErr?.status || sdkErr?.cause?.status;
         const causeCode = sdkErr?.cause?.code || sdkErr?.code;
         console.warn(
           "[AI][Layout] SDK call failed:",
           msg,
+          status ? `(status: ${status})` : "",
           causeCode ? `(code: ${causeCode})` : ""
         );
+
+        // Detect leaked / revoked API key scenario (403 with specific message)
+        if (
+          /reported as leaked/i.test(msg) ||
+          (status === 403 && /Forbidden/i.test(msg))
+        ) {
+          console.error(
+            "[AI][Layout] Gemini API key appears leaked or revoked. Returning safe fallback layout."
+          );
+          return { leakError: true, leakMessage: msg };
+        }
+
         // Network/proxy/cert issues: try REST fallback via axios
         if (
           /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|CERT|SSL|self[- ]signed/i.test(
@@ -637,7 +653,6 @@ const generateLayoutWithAI = async ({
         ) {
           console.warn("[AI][Layout] Trying REST fallback via axios");
           const rest = await generateViaAxios(chosenModel, aiPrompt);
-          // Shape a minimal object compatible with downstream usage
           return { response: { text: () => rest.text } };
         }
         throw sdkErr;
@@ -661,11 +676,44 @@ const generateLayoutWithAI = async ({
       }
     }
 
+    // Handle leaked key fallback early
+    if (result?.leakError) {
+      const fallbackHTML = generateFallbackHTML(
+        layoutType,
+        style,
+        industry,
+        componentsRequired
+      );
+      return {
+        success: true,
+        htmlCode: fallbackHTML,
+        cssCode: "",
+        components: componentsRequired,
+        layoutType,
+        style,
+        industry,
+        colorScheme,
+        title: `${industry} ${layoutType} - ${style} design (Fallback)`,
+        description:
+          "AI temporarily unavailable due to leaked / revoked Gemini API key. Please rotate GEMINI_API_KEY and restart the server.",
+        aiModel: "fallback-local",
+        isFallback: true,
+        error: "gemini_api_key_leaked",
+        leakMessage: result.leakMessage,
+        promptDebug: promptDebugPreview,
+      };
+    }
+
     if (!result || !result.response) {
       throw new Error("No response received from AI model");
     }
 
     let responseText = result.response.text();
+
+    // Log the raw Gemini response for debugging
+    console.log("\uD83D\uDCAC [Gemini RAW RESPONSE]:\n", responseText);
+    // Attach the raw response to return to the route (for frontend display)
+    let rawGeminiResponse = responseText;
 
     if (!responseText || responseText.trim().length === 0) {
       throw new Error("Empty response received from AI model");
@@ -683,10 +731,31 @@ const generateLayoutWithAI = async ({
       .replace(/^```js$/gm, "")
       .trim();
 
+    // Validate and normalize the response
+    const validationResult = validateAndNormalizeLayoutResponse(responseText, {
+      layoutType,
+      style,
+      industry,
+      componentsRequired,
+    });
+
+    if (!validationResult.isValid) {
+      console.warn(
+        "⚠️ [AI Response Validation Failed]:",
+        validationResult.errors
+      );
+      console.log("📄 [Using Fallback Response Structure]");
+    }
+
+    // Use validated/normalized response or fallback
+    responseText = validationResult.htmlCode;
+
     // Check if response is JSON and extract HTML
     if (responseText.startsWith("{") && responseText.includes('"html"')) {
       try {
         const parsed = JSON.parse(responseText);
+        // Log the parsed JSON for debugging
+        console.log("\uD83D\uDCC4 [Gemini PARSED JSON]:\n", parsed);
         if (parsed.html) {
           responseText = parsed.html;
         }
@@ -912,21 +981,21 @@ const generateLayoutWithAI = async ({
 
     // Fix image issues - ensure all images have proper URLs and attributes
     const workingImageUrls = [
-      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043472/pexels-photo-1043472.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043470/pexels-photo-1043470.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043469/pexels-photo-1043469.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043468/pexels-photo-1043468.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043467/pexels-photo-1043467.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
-      "https://images.pexels.com/photos/1043466/pexels-photo-1043466.jpeg?w=1200&h=800&fit=crop&auto=format&q=90",
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Technology/Generic
+      "https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Business/Office
+      "https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Nature/Clean
+      "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Abstract/Clean
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Professional/Clean
+      "https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Modern/Clean
+      "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Business/Professional
+      // REMOVED: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // PROBLEMATIC MAN IMAGE
+      "https://images.pexels.com/photos/1043472/pexels-photo-1043472.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Abstract/Background
+      "https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Clean/Professional
+      "https://images.pexels.com/photos/1043470/pexels-photo-1043470.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Modern/Abstract
+      "https://images.pexels.com/photos/1043469/pexels-photo-1043469.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Professional/Background
+      "https://images.pexels.com/photos/1043468/pexels-photo-1043468.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Clean/Modern
+      "https://images.pexels.com/photos/1043467/pexels-photo-1043467.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Abstract/Professional
+      "https://images.pexels.com/photos/1043466/pexels-photo-1043466.jpeg?w=1200&h=800&fit=crop&auto=format&q=90", // Background/Clean
     ];
 
     // Replace placeholder text with working images
@@ -940,7 +1009,7 @@ const generateLayoutWithAI = async ({
     responseText = responseText.replace(/Fashionable woman/gi, "");
     responseText = responseText.replace(/Stylish young person/gi, "");
 
-    // Fix broken image tags and ensure all images have working URLs
+    // Fix broken image tags and ensure all images have working URLs - ONLY replace truly broken images
     let imageIndex = 0;
     responseText = responseText.replace(
       /<img([^>]*)>/gi,
@@ -957,14 +1026,24 @@ const generateLayoutWithAI = async ({
           return ""; // Remove the image entirely
         }
 
-        // Check if image has a proper src or if it's broken
-        if (
-          !attributes.includes("src=") ||
-          attributes.includes("placeholder") ||
+        // ONLY replace images that are genuinely broken or have invalid src attributes
+        // Do NOT replace images with valid pexels URLs
+        const hasSrc = attributes.includes("src=");
+        const hasValidPexelsUrl = attributes.includes("images.pexels.com");
+        const hasPlaceholder = attributes.includes("placeholder");
+        const hasBrokenSrc =
           attributes.includes("broken") ||
           attributes.includes("data:") ||
-          attributes.includes("blob:")
-        ) {
+          attributes.includes("blob:");
+
+        // If image has valid pexels URL, keep it as-is
+        if (hasSrc && hasValidPexelsUrl && !hasPlaceholder && !hasBrokenSrc) {
+          imageIndex++;
+          return match; // Keep the original image unchanged
+        }
+
+        // Only replace if truly broken or missing src
+        if (!hasSrc || hasPlaceholder || hasBrokenSrc) {
           const workingUrl =
             workingImageUrls[imageIndex % workingImageUrls.length];
           const altText = attributes.includes("alt=")
@@ -1133,6 +1212,12 @@ const generateLayoutWithAI = async ({
       });
     }
 
+    // Log the normalized components before returning
+    console.log(
+      "\uD83D\uDEE0 [Normalized components to save]:\n",
+      componentsRequired
+    );
+
     const finalResponse = {
       success: true,
       htmlCode: responseText,
@@ -1144,6 +1229,9 @@ const generateLayoutWithAI = async ({
       colorScheme,
       title: `${industry} ${layoutType} - ${style} design`,
       description: `AI-generated ${layoutType} layout with ${style} design for ${industry} industry`,
+      rawGeminiResponse,
+      validationWarnings: validationResult.errors || null,
+      isFallback: !validationResult.isValid,
     };
 
     if (shouldDebug && promptDebugPreview) {
@@ -1196,7 +1284,7 @@ const buildColorPalettePrompt = (options = {}) => {
     industry = "technology",
     paletteType = "custom",
     prompt = "",
-    model = "gemini-2.5-pro",
+    model = "gemini-2.5-flash",
     includeGradients = true,
     includeTextureColors = false,
     semanticColors = true,
@@ -1463,7 +1551,7 @@ const generateColorPaletteWithAI = async ({
   mood,
   industry,
   paletteType,
-  model = "gemini-2.5-pro",
+  model = "gemini-2.5-flash",
 }) => {
   try {
     const generator = new ColorPaletteGenerator(genAI);
@@ -1603,120 +1691,164 @@ const normalizeColorPalette = (palette, mood, industry) => {
   return normalized;
 };
 
-// Enhanced Font Suggestions
+// Enhanced Font Suggestions (Updated for simplified frontend form)
 const buildFontSuggestionsPrompt = (options = {}) => {
   const {
-    industry = "technology",
+    projectType = "Website",
     tone = "professional",
-    usage = "web",
+    accessibilityLevel = "AA",
+    brandPersonality = [],
+    includePairings = true,
+    previewText = "",
     prompt = "",
-    model = "gemini-2.5-pro",
+    model = "gemini-2.5-flash",
   } = options;
+
+  console.log("🎯 Building AI prompt with options:", {
+    projectType,
+    tone,
+    accessibilityLevel,
+    brandPersonalityCount: brandPersonality.length,
+    hasPreviewText: !!previewText,
+    includePairings,
+  });
 
   const depthFocus = model.includes("pro");
 
   const toneGuidelines = {
-    professional: "Clean, authoritative, trustworthy, and business-appropriate",
-    modern: "Contemporary, sleek, minimalist, and forward-thinking",
-    elegant: "Sophisticated, refined, luxurious, and graceful",
-    playful: "Fun, friendly, approachable, and energetic",
-    creative: "Artistic, unique, experimental, and expressive",
-    minimal: "Simple, clean, uncluttered, and focused",
-    bold: "Strong, confident, impactful, and attention-grabbing",
-    friendly: "Warm, approachable, welcoming, and personable",
+    professional:
+      "Clean, authoritative, trustworthy, and business-appropriate - inspires confidence and competence",
+    modern:
+      "Contemporary, sleek, minimalist, and forward-thinking - cutting-edge and innovative",
+    elegant:
+      "Sophisticated, refined, luxurious, and graceful - timeless beauty and premium quality",
+    playful:
+      "Fun, friendly, approachable, and energetic - creates joy and engagement",
+    creative:
+      "Artistic, unique, experimental, and expressive - pushes boundaries and inspires",
+    minimal:
+      "Simple, clean, uncluttered, and focused - less is more philosophy",
+    bold: "Strong, confident, impactful, and attention-grabbing - commands attention and respect",
+    friendly:
+      "Warm, approachable, welcoming, and personable - builds human connections",
+    luxury:
+      "Exclusive, premium, sophisticated, and aspirational - high-end appeal",
+    classic:
+      "Traditional, timeless, reliable, and established - enduring quality",
+    casual:
+      "Relaxed, informal, accessible, and down-to-earth - everyday appeal",
+    serious:
+      "Authoritative, formal, credible, and substantial - professional gravitas",
   };
 
-  const industryContext = {
-    technology: "Tech companies, software, digital products, startups",
-    healthcare: "Medical, wellness, healthcare, pharmaceutical",
-    finance: "Banking, investment, insurance, financial services",
-    ecommerce: "Online retail, shopping, marketplace, consumer goods",
-    education: "Schools, universities, online learning, educational content",
-    realestate: "Property, housing, real estate, construction",
-    food: "Restaurants, food delivery, culinary, hospitality",
-    travel: "Tourism, hospitality, travel booking, adventure",
-    fashion: "Clothing, beauty, lifestyle, luxury brands",
-    entertainment: "Media, gaming, music, entertainment content",
+  const projectTypeContext = {
+    Website:
+      "Web applications, responsive design, user interfaces, digital experiences",
+    "Mobile App":
+      "Mobile interfaces, iOS/Android apps, touch-first design, small screens",
+    Logo: "Brand identity, logomarks, scalable graphics, brand recognition",
+    "Print Design":
+      "Printed materials, brochures, magazines, high-resolution output",
+    "Brand Identity":
+      "Complete brand systems, visual identity, brand guidelines",
+    "Marketing Materials":
+      "Promotional content, advertising, sales materials, campaigns",
+    "UI/UX Design":
+      "User interface design, dashboards, admin panels, interactive elements",
+    Typography: "Type-focused design, editorial layouts, typographic hierarchy",
+    Editorial:
+      "Publications, articles, content-heavy layouts, reading experiences",
   };
 
-  const usageContext = {
-    web: "Web applications, websites, responsive design",
-    mobile: "Mobile apps, iOS, Android, touch interfaces",
-    print: "Print materials, brochures, magazines, books",
-    branding: "Logo design, brand identity, marketing materials",
-    ui: "User interface design, dashboards, admin panels",
+  const accessibilityRequirements = {
+    A: "Basic WCAG compliance with good readability",
+    AA: "Standard accessibility excellence (4.5:1 contrast minimum)",
+    AAA: "Premium accessibility with enhanced legibility (7:1 contrast minimum)",
   };
 
   const toneGuide = toneGuidelines[tone] || toneGuidelines.professional;
-  const industryDesc = industryContext[industry] || industryContext.technology;
-  const usageDesc = usageContext[usage] || usageContext.web;
+  const projectDesc =
+    projectTypeContext[projectType] || projectTypeContext["Website"];
+  const accessibilityReq =
+    accessibilityRequirements[accessibilityLevel] ||
+    accessibilityRequirements["AA"];
+
+  // Build brand personality context
+  const personalityContext =
+    brandPersonality.length > 0
+      ? `Brand should feel: ${brandPersonality.join(
+          ", "
+        )} - integrate these personality traits into font selection.`
+      : "";
+
+  // Build preview text context
+  const previewContext =
+    previewText &&
+    previewText.trim() !== "The quick brown fox jumps over the lazy dog" &&
+    previewText.trim() !== ""
+      ? `Test fonts with this specific text: "${previewText}"`
+      : "Use standard typography samples for demonstration";
 
   const aiPrompt = `
-You are a world-class typography expert and UI/UX designer.
-Suggest font combinations for ${industryDesc} applications with ${toneGuide} tone.
+You are a typography expert. Generate ${
+    depthFocus ? "4-5" : "3-4"
+  } font combinations for ${projectDesc} with a ${toneGuide} style.
 
-RESPONSE RULES:
-1. Return ONLY valid JSON. No markdown, explanations, or code blocks.
-2. Include 3-5 font combinations with detailed reasoning.
-3. Ensure web-safe fonts and Google Fonts availability.
-4. ${
-    depthFocus
-      ? "Include detailed typography principles and usage guidelines"
-      : "Keep it practical and actionable"
-  }.
+PROJECT DETAILS:
+• Project Type: ${projectType}
+• Style: ${toneGuide}
+${personalityContext}
+• ${previewContext}
 
-FONT REQUIREMENTS:
-- Industry: ${industryDesc}
-- Tone: ${toneGuide}
-- Usage: ${usageDesc}
-- Accessibility: Ensure good readability and contrast
-- Web-safe: Prioritize Google Fonts and system fonts
-- Pairing: Create harmonious combinations with clear hierarchy
+${prompt ? `REQUIREMENTS: ${prompt}` : ""}
 
-${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ""}
+Focus on:
+✓ Clean, readable fonts
+✓ Good font pairings
+✓ Modern Google Fonts
+✓ Simple usage guidelines
 
-JSON STRUCTURE:
+RETURN ONLY VALID JSON:
+
 {
-  "industry": "${industry}",
+  "success": true,
+  "projectType": "${projectType}",
   "tone": "${tone}",
-  "usage": "${usage}",
-  "combinations": [
+  "summary": "Short summary for ${projectType} project",
+  "suggestions": [
     {
-      "name": "Combination name",
-      "description": "Brief description of the combination",
-      "heading": {
-        "primary": "Font Name",
-        "fallback": "Arial, sans-serif",
-        "weight": "600",
-        "size": "2.5rem",
-        "usage": "Main headings, hero text"
+      "id": "combo_1",
+      "name": "Font Combination Name",
+      "description": "Brief description of this font pairing",
+      "score": 95,
+      "primaryFont": {
+        "name": "Google Font Name",
+        "category": "Sans-serif",
+        "weight": "400, 500, 600, 700",
+        "url": "https://fonts.google.com/specimen/Font+Name"
       },
-      "body": {
-        "primary": "Font Name",
-        "fallback": "Arial, sans-serif",
-        "weight": "400",
-        "size": "1rem",
-        "usage": "Body text, paragraphs"
+      "secondaryFont": {
+        "name": "Google Font Name", 
+        "category": "Serif",
+        "weight": "400, 600",
+        "url": "https://fonts.google.com/specimen/Font+Name"
       },
-      "accent": {
-        "primary": "Font Name",
-        "fallback": "Arial, sans-serif",
-        "weight": "500",
-        "size": "1.125rem",
-        "usage": "Subheadings, captions"
+      "usage": {
+        "headings": "Font Name (600, 700)",
+        "body": "Font Name (400, 500)", 
+        "accents": "Font Name (400, 600)"
       },
-      "reasoning": "Why this combination works well",
-      "bestFor": ["Use case 1", "Use case 2"],
-      "googleFonts": ["Font Name 1", "Font Name 2"],
-      "accessibility": "Accessibility considerations"
+      "reasoning": "Short explanation why this combination works well",
+      "bestFor": ["Use case 1", "Use case 2", "Use case 3"],
+      "implementation": {
+        "cssImport": "@import url('https://fonts.googleapis.com/css2?family=Font+Name:wght@400;500;600;700&display=swap');",
+        "fontStack": "font-family: 'Font Name', -apple-system, BlinkMacSystemFont, sans-serif;"
+      }
     }
   ],
-  "principles": {
-    "contrast": "Guidelines for font contrast and hierarchy",
-    "spacing": "Line height and letter spacing recommendations",
-    "scaling": "Responsive font sizing strategy"
-  },
-  "tags": ["${tone}", "${industry}", "${usage}", "accessible"]
+  "tags": ["${tone}", "${projectType}", "modern", "clean"${
+    brandPersonality.length > 0 ? `, "${brandPersonality.join('", "')}"` : ""
+  }]
 }`;
 
   return aiPrompt;
@@ -1724,23 +1856,39 @@ JSON STRUCTURE:
 
 const generateFontSuggestionsWithAI = async ({
   prompt,
-  industry,
+  projectType,
   tone,
-  usage,
-  model = "gemini-2.5-pro",
+  accessibilityLevel,
+  brandPersonality,
+  includePairings,
+  previewText,
+  model = "gemini-2.5-flash",
 }) => {
   try {
     const aiPrompt = buildFontSuggestionsPrompt({
-      industry,
+      projectType,
       tone,
-      usage,
+      accessibilityLevel,
+      brandPersonality,
+      includePairings,
+      previewText,
       prompt,
       model,
     });
 
+    console.log("🚀 FONT SUGGESTIONS PROMPT:");
+    console.log("=".repeat(80));
+    console.log(aiPrompt);
+    console.log("=".repeat(80));
+
     const geminiModel = genAI.getGenerativeModel({ model });
     const result = await geminiModel.generateContent(aiPrompt);
     let responseText = result.response.text();
+
+    console.log("🎯 GEMINI RESPONSE:");
+    console.log("-".repeat(80));
+    console.log(responseText);
+    console.log("-".repeat(80));
 
     responseText = responseText
       .replace(/```json\s*/gi, "")
@@ -1753,69 +1901,215 @@ const generateFontSuggestionsWithAI = async ({
       // Normalize and validate the font suggestions data
       const normalizedFonts = normalizeFontSuggestions(
         fonts,
-        industry,
+        projectType,
         tone,
-        usage
+        accessibilityLevel
       );
       return normalizedFonts;
     } catch (parseError) {
-      return generateDefaultFontSuggestions(industry, tone);
+      return generateDefaultFontSuggestions(projectType, tone);
     }
   } catch (error) {
-    return generateDefaultFontSuggestions(industry, tone);
+    return generateDefaultFontSuggestions(projectType, tone);
   }
 };
 
-// Helper function to normalize font suggestions data
-const normalizeFontSuggestions = (fonts, industry, tone, usage) => {
+// Enhanced function to normalize font suggestions data (updated for new form fields)
+const normalizeFontSuggestions = (
+  fonts,
+  projectType,
+  tone,
+  accessibilityLevel
+) => {
+  console.log("📊 Normalizing font suggestions:", {
+    hasSuccess: fonts.success,
+    hasSuggestions: Array.isArray(fonts.suggestions),
+    hasCombinations: Array.isArray(fonts.combinations),
+    suggestionsLength: fonts.suggestions?.length,
+    combinationsLength: fonts.combinations?.length,
+    projectType,
+    tone,
+    accessibilityLevel,
+  });
+
+  // Handle both new format (suggestions) and legacy format (combinations)
+  const rawSuggestions = fonts.suggestions || fonts.combinations || [];
+
+  console.log("🔍 Raw suggestions before mapping:", {
+    rawSuggestionsType: typeof rawSuggestions,
+    isArray: Array.isArray(rawSuggestions),
+    length: rawSuggestions?.length,
+    firstItem: rawSuggestions?.[0] ? Object.keys(rawSuggestions[0]) : null,
+  });
+
+  const normalizedSuggestions = Array.isArray(rawSuggestions)
+    ? rawSuggestions.map((item, index) => {
+        console.log(`🔄 Processing suggestion ${index + 1}:`, {
+          hasId: !!item.id,
+          hasName: !!item.name,
+          hasPrimaryFont: !!item.primaryFont,
+          hasSecondaryFont: !!item.secondaryFont,
+        });
+        // New format handling
+        if (item.primaryFont && item.secondaryFont) {
+          return {
+            id: item.id || `suggestion_${index + 1}`,
+            name: item.name || `Font Combination ${index + 1}`,
+            description:
+              item.description || "AI-generated typography recommendation",
+            primaryFont: {
+              name: item.primaryFont?.name || "Inter",
+              category: item.primaryFont?.category || "Sans-serif",
+              weight: item.primaryFont?.weight || "400, 500, 600, 700",
+              url:
+                item.primaryFont?.url ||
+                "https://fonts.google.com/specimen/Inter",
+            },
+            secondaryFont: {
+              name: item.secondaryFont?.name || "Source Sans Pro",
+              category: item.secondaryFont?.category || "Sans-serif",
+              weight: item.secondaryFont?.weight || "400, 600",
+              url:
+                item.secondaryFont?.url ||
+                "https://fonts.google.com/specimen/Source+Sans+Pro",
+            },
+            usage: item.usage || {
+              headings: `${item.primaryFont?.name || "Inter"} (600, 700)`,
+              body: `${item.primaryFont?.name || "Inter"} (400, 500)`,
+              accents: `${
+                item.secondaryFont?.name || "Source Sans Pro"
+              } (400, 600)`,
+            },
+            score: typeof item.score === "number" ? item.score : 8.5,
+            reasoning:
+              item.reasoning || "This combination works well for your project",
+            bestFor: Array.isArray(item.bestFor)
+              ? item.bestFor
+              : ["Web applications", "Professional content"],
+            psychology: item.psychology || "Clean and professional appearance",
+            accessibility: item.accessibility || {
+              contrastRatio: "4.5:1 AA compliant",
+              readability: "Good readability",
+              screenReader: "Screen reader friendly",
+            },
+            performance: item.performance || {
+              loadTime: "Fast loading",
+              fileSize: "Optimized",
+              fallback: "System font fallbacks",
+            },
+            implementation: item.implementation || {
+              cssImport: `@import url('https://fonts.googleapis.com/css2?family=${(
+                item.primaryFont?.name || "Inter"
+              ).replace(" ", "+")}:wght@400;500;600;700&display=swap');`,
+              fontStack: `font-family: '${
+                item.primaryFont?.name || "Inter"
+              }', -apple-system, BlinkMacSystemFont, sans-serif;`,
+            },
+            tags: Array.isArray(item.tags)
+              ? item.tags
+              : [tone, projectType, "accessible", "optimized"],
+          };
+        }
+
+        // Legacy format handling (combinations with heading/body/accent structure)
+        return {
+          id: `legacy_${index + 1}`,
+          name: item.name || `Font Combination ${index + 1}`,
+          description: item.description || "Professional font combination",
+          primaryFont: {
+            name: item.heading?.primary || "Inter",
+            category: "Sans-serif",
+            weight: item.heading?.weight || "400, 500, 600, 700",
+            url: `https://fonts.google.com/specimen/${(
+              item.heading?.primary || "Inter"
+            ).replace(" ", "+")}`,
+          },
+          secondaryFont: {
+            name:
+              item.body?.primary || item.accent?.primary || "Source Sans Pro",
+            category: "Sans-serif",
+            weight: item.body?.weight || "400, 600",
+            url: `https://fonts.google.com/specimen/${(
+              item.body?.primary || "Source+Sans+Pro"
+            ).replace(" ", "+")}`,
+          },
+          usage: {
+            headings:
+              item.heading?.usage ||
+              `${item.heading?.primary || "Inter"} (600, 700)`,
+            body:
+              item.body?.usage || `${item.body?.primary || "Inter"} (400, 500)`,
+            accents:
+              item.accent?.usage || `${item.accent?.primary || "Inter"} (500)`,
+          },
+          score: 8.0,
+          reasoning: item.reasoning || "Professional and readable combination",
+          bestFor: Array.isArray(item.bestFor) ? item.bestFor : ["General use"],
+          psychology: "Creates professional impression with good readability",
+          accessibility: item.accessibility || "Good contrast and readability",
+          performance: "Optimized Google Fonts loading",
+          implementation: {
+            cssImport: `@import url('https://fonts.googleapis.com/css2?family=${(
+              item.heading?.primary || "Inter"
+            ).replace(" ", "+")}:wght@400;500;600;700&display=swap');`,
+            fontStack: `font-family: '${
+              item.heading?.primary || "Inter"
+            }', -apple-system, BlinkMacSystemFont, sans-serif;`,
+          },
+          tags: [tone, projectType, `WCAG-${accessibilityLevel}`, "accessible"],
+        };
+      })
+    : [];
+
+  console.log("🎯 Normalized suggestions result:", {
+    normalizedCount: normalizedSuggestions.length,
+    suggestionIds: normalizedSuggestions.map((s) => s.id),
+    suggestionNames: normalizedSuggestions.map((s) => s.name),
+  });
+
   const normalized = {
-    industry: fonts.industry || industry,
+    success: fonts.success || true,
+    projectType: fonts.projectType || projectType,
     tone: fonts.tone || tone,
-    usage: fonts.usage || usage,
-    combinations: Array.isArray(fonts.combinations)
-      ? fonts.combinations.map((combo) => ({
-          name: combo.name || "Font Combination",
-          description: combo.description || "Professional font combination",
-          heading: {
-            primary: combo.heading?.primary || "Inter",
-            fallback: combo.heading?.fallback || "Arial, sans-serif",
-            weight: combo.heading?.weight || "600",
-            size: combo.heading?.size || "2.5rem",
-            usage: combo.heading?.usage || "Main headings, hero text",
-          },
-          body: {
-            primary: combo.body?.primary || "Inter",
-            fallback: combo.body?.fallback || "Arial, sans-serif",
-            weight: combo.body?.weight || "400",
-            size: combo.body?.size || "1rem",
-            usage: combo.body?.usage || "Body text, paragraphs",
-          },
-          accent: {
-            primary: combo.accent?.primary || "Inter",
-            fallback: combo.accent?.fallback || "Arial, sans-serif",
-            weight: combo.accent?.weight || "500",
-            size: combo.accent?.size || "1.125rem",
-            usage: combo.accent?.usage || "Subheadings, captions",
-          },
-          reasoning: combo.reasoning || "Professional and readable combination",
-          bestFor: Array.isArray(combo.bestFor)
-            ? combo.bestFor
-            : ["General use"],
-          googleFonts: Array.isArray(combo.googleFonts)
-            ? combo.googleFonts
-            : [combo.heading?.primary || "Inter"],
-          accessibility: combo.accessibility || "Good contrast and readability",
-        }))
-      : [],
+    accessibilityLevel: fonts.accessibilityLevel || accessibilityLevel,
+    summary: fonts.summary || `Font recommendations for ${projectType}`,
+    suggestions: normalizedSuggestions,
+    // Legacy support - map suggestions back to combinations for backward compatibility
+    combinations: normalizedSuggestions,
+    designSystem: fonts.designSystem || {
+      typeScale: { ratio: 1.25, baseSize: "1rem" },
+      spacing: { lineHeight: { body: 1.6, headings: 1.2 } },
+    },
+    businessImpact: fonts.businessImpact || {
+      brandPerception:
+        "Enhanced professional credibility and brand recognition",
+      userExperience: "Improved readability, engagement, and user satisfaction",
+      conversionOptimization:
+        "Clear typography hierarchy that drives user actions",
+    },
     principles: fonts.principles || {
-      contrast: "Ensure sufficient contrast between text and background",
-      spacing: "Use appropriate line height and letter spacing",
-      scaling: "Implement responsive font sizing",
+      contrast:
+        "Clear visual hierarchy through font weight and size variations",
+      spacing:
+        "Optimal line height (1.4-1.6) and letter spacing for readability",
+      scaling: "Responsive typography using modular scales for all devices",
     },
     tags: Array.isArray(fonts.tags)
       ? fonts.tags
-      : [tone, industry, usage, "accessible"],
+      : [
+          tone,
+          projectType,
+          `WCAG-${accessibilityLevel}`,
+          "accessible",
+          "optimized",
+        ],
   };
+
+  console.log("✅ Font suggestions normalized:", {
+    suggestionsCount: normalized.suggestions.length,
+    hasDesignSystem: !!normalized.designSystem,
+    hasBusinessImpact: !!normalized.businessImpact,
+  });
 
   return normalized;
 };
@@ -1827,7 +2121,7 @@ const buildUXAuditPrompt = (options = {}) => {
     description = "",
     context = "general web application",
     focusAreas = ["all"],
-    model = "gemini-2.5-pro",
+    model = "gemini-2.5-flash",
   } = options;
 
   const depthFocus = model.includes("pro");
@@ -2344,7 +2638,7 @@ const performUXAuditWithAI = async ({
   description,
   context,
   focusAreas,
-  model = process.env.GEMINI_MODEL || "gemini-2.5-pro",
+  model = process.env.GEMINI_MODEL || "gemini-2.5-flash",
 }) => {
   try {
     const aiPrompt = buildUXAuditPrompt({
@@ -2616,14 +2910,60 @@ const generateDefaultColorPalette = (mood, industry) => ({
   },
 });
 
-const generateDefaultFontSuggestions = (industry, tone) => ({
-  heading: {
-    primary: "Inter",
-    secondary: "Poppins",
-    accent: "Playfair Display",
-  },
-  body: { primary: "Inter", secondary: "Open Sans", accent: "Source Sans Pro" },
-  display: { primary: "Montserrat", secondary: "Roboto", accent: "Lora" },
+const generateDefaultFontSuggestions = (projectType, tone) => ({
+  success: true,
+  projectType: projectType || "Website",
+  tone: tone || "professional",
+  accessibilityLevel: "AA",
+  summary: "Default font recommendations when AI is unavailable",
+  suggestions: [
+    {
+      id: "default_1",
+      name: "Professional Standard",
+      description:
+        "Clean, readable combination perfect for professional applications",
+      score: 8.5,
+      primaryFont: {
+        name: "Inter",
+        category: "Sans-serif",
+        weight: "400, 500, 600, 700",
+        url: "https://fonts.google.com/specimen/Inter",
+      },
+      secondaryFont: {
+        name: "Source Sans Pro",
+        category: "Sans-serif",
+        weight: "400, 600",
+        url: "https://fonts.google.com/specimen/Source+Sans+Pro",
+      },
+      usage: {
+        headings: "Inter (600, 700) for H1-H3",
+        body: "Inter (400, 500) for paragraphs",
+        accents: "Source Sans Pro (400, 600) for captions",
+      },
+      reasoning:
+        "Inter provides excellent readability with modern appeal, while Source Sans Pro offers complementary support",
+      bestFor: ["Web applications", "Professional content", "UI design"],
+      psychology:
+        "Creates trust and professionalism while maintaining approachability",
+      accessibility: {
+        contrastRatio: "4.5:1 AA compliant",
+        readability: "Excellent legibility at all sizes",
+        screenReader: "Screen reader friendly",
+      },
+      performance: {
+        loadTime: "Fast loading Google Fonts",
+        fileSize: "Optimized",
+        fallback: "System font fallbacks",
+      },
+      implementation: {
+        cssImport:
+          "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
+        fontStack:
+          "font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;",
+      },
+      tags: [tone, projectType, "accessible", "professional"],
+    },
+  ],
 });
 
 const generateDefaultUXAudit = () => ({
@@ -2739,6 +3079,249 @@ const generateDefaultUXAuditWithContext = (
   return baseAudit;
 };
 
+// Validation function for layout responses
+const validateAndNormalizeLayoutResponse = (responseText, options = {}) => {
+  const { layoutType, style, industry, componentsRequired = [] } = options;
+
+  try {
+    // Check if response is valid HTML
+    const hasDoctype = responseText.includes("<!DOCTYPE html>");
+    const hasHtml =
+      responseText.includes("<html") && responseText.includes("</html>");
+    const hasHead =
+      responseText.includes("<head>") && responseText.includes("</head>");
+    const hasBody =
+      responseText.includes("<body>") && responseText.includes("</body>");
+
+    const validationErrors = [];
+    let isValid = true;
+
+    console.log(
+      "🔍 [Validation] Starting validation for response of length:",
+      responseText.length
+    );
+    console.log("🔍 [Validation] HTML structure check:", {
+      hasDoctype,
+      hasHtml,
+      hasHead,
+      hasBody,
+    });
+
+    // Only mark as invalid for truly broken HTML - be more lenient
+    if (!hasHtml) {
+      validationErrors.push("Missing or incomplete HTML tags");
+      isValid = false;
+    }
+
+    if (!hasBody) {
+      validationErrors.push("Missing or incomplete BODY section");
+      isValid = false;
+    }
+
+    // Check for severe malformed patterns that would break rendering
+    if (
+      responseText.includes("word-wrap: break-word") &&
+      responseText.includes("<img")
+    ) {
+      validationErrors.push("Detected malformed img tags with text properties");
+      // Don't mark as invalid - just warn
+    }
+
+    // Check content quality - be more lenient
+    const bodyContent = responseText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyContent && bodyContent[1].trim().length < 50) {
+      validationErrors.push("Body content appears very short");
+      // Don't mark as invalid - just warn
+    }
+
+    // Auto-fix missing DOCTYPE and HEAD if HTML is otherwise valid
+    let normalizedHtml = responseText;
+
+    if (hasHtml && hasBody && !hasDoctype) {
+      console.log("🔧 [Auto-fix] Adding missing DOCTYPE");
+      normalizedHtml = "<!DOCTYPE html>\n" + normalizedHtml;
+      validationErrors.push("Auto-fixed: Added missing DOCTYPE declaration");
+    }
+
+    if (hasHtml && hasBody && !hasHead) {
+      console.log("🔧 [Auto-fix] Adding missing HEAD section");
+      normalizedHtml = normalizedHtml.replace(
+        /<html([^>]*)>/i,
+        '<html$1>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Generated Layout</title>\n</head>'
+      );
+      validationErrors.push("Auto-fixed: Added missing HEAD section");
+    }
+
+    // Only use fallback for severely broken HTML
+    if (!isValid) {
+      console.log(
+        "❌ [Fallback] Response is severely malformed, using fallback"
+      );
+      normalizedHtml = generateFallbackHTML(
+        layoutType,
+        style,
+        industry,
+        componentsRequired
+      );
+    } else {
+      console.log("✅ [Validation] Response is valid or auto-fixable");
+    }
+
+    return {
+      isValid,
+      errors: validationErrors,
+      htmlCode: normalizedHtml,
+      hasWarnings: validationErrors.length > 0,
+    };
+  } catch (error) {
+    console.error("❌ [Validation Error]:", error);
+    return {
+      isValid: false,
+      errors: [`Validation failed: ${error.message}`],
+      htmlCode: generateFallbackHTML(
+        layoutType,
+        style,
+        industry,
+        componentsRequired
+      ),
+      hasWarnings: true,
+    };
+  }
+};
+
+// Generate a fallback HTML when AI response is invalid
+const generateFallbackHTML = (
+  layoutType = "landing-page",
+  style = "modern",
+  industry = "technology",
+  components = []
+) => {
+  const title = `${
+    industry.charAt(0).toUpperCase() + industry.slice(1)
+  } ${layoutType.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .hero { 
+            padding: 80px 0; 
+            text-align: center; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .hero h1 { 
+            font-size: 3rem; 
+            margin-bottom: 20px; 
+            font-weight: 700;
+        }
+        .hero p { 
+            font-size: 1.2rem; 
+            margin-bottom: 30px; 
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn { 
+            display: inline-block; 
+            padding: 15px 30px; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        .btn:hover { background: #0056b3; }
+        .section { padding: 80px 0; }
+        .features { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 40px; 
+            margin-top: 40px;
+        }
+        .feature { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+        .feature h3 { 
+            font-size: 1.5rem; 
+            margin-bottom: 15px; 
+            color: #333;
+        }
+        .feature p { 
+            color: #666; 
+            line-height: 1.6;
+        }
+        .footer { 
+            background: #333; 
+            color: white; 
+            text-align: center; 
+            padding: 40px 0; 
+        }
+        @media (max-width: 768px) { 
+            .hero h1 { font-size: 2rem; } 
+            .features { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <div class="container">
+            <h1>${title}</h1>
+            <p>A professional ${style} ${layoutType.replace(
+    "-",
+    " "
+  )} designed for the ${industry} industry. Built with modern standards and best practices.</p>
+            <a href="#features" class="btn">Explore Features</a>
+        </div>
+    </header>
+
+    <section id="features" class="section">
+        <div class="container">
+            <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 20px;">Key Features</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 60px; font-size: 1.1rem;">Everything you need for a successful ${industry} presence</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <h3>Professional Design</h3>
+                    <p>Clean, modern interface that builds trust and credibility with your ${industry} audience.</p>
+                </div>
+                <div class="feature">
+                    <h3>Responsive Layout</h3>
+                    <p>Looks perfect on all devices - desktop, tablet, and mobile. Your users will have a great experience everywhere.</p>
+                </div>
+                <div class="feature">
+                    <h3>Industry Optimized</h3>
+                    <p>Specifically designed for the ${industry} sector with relevant content and user experience patterns.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 ${title}. Built with AI-powered design technology.</p>
+            <p style="margin-top: 10px; opacity: 0.8;">This is a fallback layout generated when the AI response needed correction.</p>
+        </div>
+    </footer>
+</body>
+</html>`;
+};
+
 module.exports = {
   buildPrompt,
   generateLayoutWithAI,
@@ -2748,6 +3331,4 @@ module.exports = {
   generateFontSuggestionsWithAI,
   buildUXAuditPrompt,
   performUXAuditWithAI,
-  analyzeBrand,
-  generateSite,
 };

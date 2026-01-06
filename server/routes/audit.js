@@ -85,7 +85,7 @@ router.post(
       context,
       focusAreas,
       description,
-      model = process.env.GEMINI_MODEL || "gemini-2.5-pro",
+      model = process.env.GEMINI_MODEL || "gemini-2.5-flash",
     } = req.body;
 
     if (!req.file && !description) {

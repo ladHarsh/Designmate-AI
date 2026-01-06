@@ -23,7 +23,7 @@ router.post(
       mood,
       industry,
       paletteType,
-      model = "gemini-2.5-pro",
+      model = "gemini-2.5-flash",
       baseColor,
     } = req.body;
 

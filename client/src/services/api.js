@@ -104,13 +104,6 @@ export const trendsAPI = {
   getForecast: () => api.get("/trends/forecast"),
 };
 
-// Brand Intelligence API
-export const brandIntelAPI = {
-  analyze: (payload) => api.post("/brand-intel/analyze", payload),
-  preview: (generatedSiteId) =>
-    api.get(`/brand-intel/${generatedSiteId}/preview`),
-};
-
 // User API
 export const userAPI = {
   getProfile: () => api.get("/users/profile"),
