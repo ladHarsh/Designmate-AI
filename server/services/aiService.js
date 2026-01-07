@@ -66,8 +66,8 @@ async function callGeminiJSONWithRetry(
   opts = {}
 ) {
   const {
-    retries = 1,
-    backoffMs = 800,
+    retries = 3,
+    backoffMs = 2000,
     fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash",
   } = opts;
   let lastError;
@@ -77,10 +77,20 @@ async function callGeminiJSONWithRetry(
     } catch (err) {
       lastError = err;
       const message = String(err?.message || err);
+      const status = err?.status;
       const delay = backoffMs * Math.pow(2, attempt);
       // Retry on transient errors (503/overloaded/timeouts)
-      if (/overloaded|503|unavailable|timeout|rate limit|busy/i.test(message)) {
-        await new Promise((r) => setTimeout(r, delay));
+      if (
+        /overloaded|503|unavailable|timeout|rate limit|busy/i.test(message) ||
+        status === 503
+      ) {
+        const waitTime = attempt === retries - 1 ? delay : delay;
+        console.warn(
+          `[AI] Transient error (attempt ${
+            attempt + 1
+          }/${retries}). Retrying in ${waitTime}ms...`
+        );
+        await new Promise((r) => setTimeout(r, waitTime));
         continue;
       }
       break;
@@ -1409,6 +1419,12 @@ ${semanticFeatures}
 
 ${prompt ? `CUSTOM REQUIREMENTS: ${prompt}` : ""}
 
+CRITICAL VALIDATION RULES:
+1. "mood" field MUST be EXACTLY one of: "calm", "energetic", "professional", "playful", "elegant", "bold", "minimal", "warm", "cool"
+2. "industry" field MUST be EXACTLY one of: "technology", "healthcare", "finance", "education", "retail", "food", "travel", "fashion", "entertainment", "other"
+3. "paletteType" field MUST be EXACTLY one of: "monochromatic", "analogous", "complementary", "triadic", "tetradic", "split-complementary", "custom"
+4. Do NOT combine values, add commas, or create custom text for these fields.
+
 JSON STRUCTURE:
 {
   "name": "Descriptive palette name",
@@ -1546,6 +1562,161 @@ Each theme should maintain:
 
 const { ColorPaletteGenerator } = require("./paletteService");
 
+// Map mood input to valid enum values
+const mapMoodToEnum = (mood) => {
+  const validMoods = [
+    "calm",
+    "energetic",
+    "professional",
+    "playful",
+    "elegant",
+    "bold",
+    "minimal",
+    "warm",
+    "cool",
+  ];
+
+  if (!mood) return "professional";
+
+  const normalized = mood.toLowerCase().trim();
+
+  // Direct match
+  if (validMoods.includes(normalized)) return normalized;
+
+  // Mapping for common variations
+  const moodMap = {
+    modern: "professional",
+    minimalist: "minimal",
+    minimalistic: "minimal",
+    simple: "minimal",
+    clean: "minimal",
+    vibrant: "energetic",
+    dynamic: "energetic",
+    active: "energetic",
+    sophisticated: "elegant",
+    refined: "elegant",
+    luxury: "elegant",
+    fun: "playful",
+    creative: "playful",
+    exciting: "energetic",
+    serious: "professional",
+    business: "professional",
+    corporate: "professional",
+    relaxed: "calm",
+    peaceful: "calm",
+    soothing: "calm",
+    cozy: "warm",
+    inviting: "warm",
+    fresh: "cool",
+    crisp: "cool",
+  };
+
+  // Check if any keyword matches
+  for (const [key, value] of Object.entries(moodMap)) {
+    if (normalized.includes(key)) return value;
+  }
+
+  // Default fallback
+  return "professional";
+};
+
+// Map paletteType input to valid enum values
+const mapPaletteTypeToEnum = (paletteType) => {
+  const validTypes = [
+    "monochromatic",
+    "analogous",
+    "complementary",
+    "triadic",
+    "tetradic",
+    "split-complementary",
+    "custom",
+  ];
+
+  if (!paletteType) return "custom";
+
+  const normalized = paletteType.toLowerCase().trim();
+
+  // Direct match
+  if (validTypes.includes(normalized)) return normalized;
+
+  // Mapping for common variations
+  const typeMap = {
+    mono: "monochromatic",
+    single: "monochromatic",
+    adjacent: "analogous",
+    similar: "analogous",
+    opposite: "complementary",
+    contrast: "complementary",
+    triad: "triadic",
+    three: "triadic",
+    quad: "tetradic",
+    four: "tetradic",
+    split: "split-complementary",
+  };
+
+  // Check if any keyword matches
+  for (const [key, value] of Object.entries(typeMap)) {
+    if (normalized.includes(key)) return value;
+  }
+
+  // Default fallback
+  return "custom";
+};
+
+// Map industry input to valid enum values
+const mapIndustryToEnum = (industry) => {
+  const validIndustries = [
+    "technology",
+    "healthcare",
+    "finance",
+    "education",
+    "retail",
+    "food",
+    "travel",
+    "fashion",
+    "entertainment",
+    "other",
+  ];
+
+  if (!industry) return "technology";
+
+  const normalized = industry.toLowerCase().trim();
+
+  // Direct match
+  if (validIndustries.includes(normalized)) return normalized;
+
+  // Mapping for common variations
+  const industryMap = {
+    tech: "technology",
+    software: "technology",
+    it: "technology",
+    saas: "technology",
+    ecommerce: "retail",
+    "e-commerce": "retail",
+    shopping: "retail",
+    medical: "healthcare",
+    health: "healthcare",
+    fintech: "finance",
+    banking: "finance",
+    school: "education",
+    learning: "education",
+    restaurant: "food",
+    hospitality: "travel",
+    tourism: "travel",
+    clothing: "fashion",
+    media: "entertainment",
+    gaming: "entertainment",
+  };
+
+  // Check if any keyword matches
+  for (const [key, value] of Object.entries(industryMap)) {
+    if (normalized.includes(key)) return value;
+  }
+
+  // Default fallback
+  return "other";
+};
+
 const generateColorPaletteWithAI = async ({
   prompt,
   mood,
@@ -1554,31 +1725,46 @@ const generateColorPaletteWithAI = async ({
   model = "gemini-2.5-flash",
 }) => {
   try {
+    // Map to valid enum values
+    const validMood = mapMoodToEnum(mood);
+    const validIndustry = mapIndustryToEnum(industry);
+    const validPaletteType = mapPaletteTypeToEnum(paletteType);
+
     const generator = new ColorPaletteGenerator(genAI);
     const normalizedPalette = await generator.generate({
       prompt: `${prompt}`,
-      mood,
-      industry: industry || "technology",
-      paletteType: paletteType || "custom",
+      mood: validMood,
+      industry: validIndustry,
+      paletteType: validPaletteType,
       model,
     });
     return normalizedPalette;
   } catch (error) {
-    return generateDefaultColorPalette(mood, industry);
+    return generateDefaultColorPalette(
+      mapMoodToEnum(mood),
+      mapIndustryToEnum(industry)
+    );
   }
 };
 
 // Helper function to normalize color palette data to backend schema
 const normalizeColorPalette = (palette, mood, industry) => {
+  // Map all enum fields to valid values
+  const validMood = mapMoodToEnum(mood);
+  const validIndustry = mapIndustryToEnum(industry);
+  const aiMood = mapMoodToEnum(palette.mood);
+  const aiIndustry = mapIndustryToEnum(palette.industry);
+  const aiPaletteType = mapPaletteTypeToEnum(palette.paletteType);
+
   // Ensure required fields exist
   const normalized = {
-    name: palette.name || `${mood} ${industry} Palette`,
+    name: palette.name || `${validMood} ${validIndustry} Palette`,
     description:
       palette.description ||
-      `A ${mood} color palette for ${industry} applications`,
-    mood: palette.mood || mood,
-    industry: palette.industry || industry,
-    paletteType: palette.paletteType || "custom",
+      `A ${validMood} color palette for ${validIndustry} applications`,
+    mood: aiMood || validMood,
+    industry: aiIndustry || validIndustry,
+    paletteType: aiPaletteType || "custom",
     colors: {},
     accessibility: {
       contrastRatio:

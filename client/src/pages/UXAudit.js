@@ -156,7 +156,7 @@ const UXAudit = () => {
     },
     {
       id: "recommendations",
-      label: "Recommendations",
+      label: "Tips",
       icon: <LightBulbIcon className="h-4 w-4" />,
     },
   ];
@@ -325,18 +325,20 @@ const UXAudit = () => {
           background: #94a3b8;
         }
       `}</style>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-2 xs:px-4 sm:px-6 lg:px-8 py-2 xs:py-6">
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="hidden xs:block text-center mb-12"
         >
           <div className="flex items-center justify-center mb-4">
-            <EyeIcon className="h-8 w-8 text-indigo-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">UX Audit</h1>
+            <EyeIcon className="h-6 xs:h-8 w-6 xs:w-8 text-indigo-600 mr-2 xs:mr-3" />
+            <h1 className="text-2xl xs:text-4xl font-bold text-gray-900">
+              UX Audit
+            </h1>
           </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-sm xs:text-xl text-gray-600 max-w-3xl mx-auto">
             Get comprehensive UX analysis and actionable insights for your
             designs. Our AI evaluates accessibility, usability, visual design,
             and conversion optimization to help you create exceptional user
@@ -351,10 +353,10 @@ const UXAudit = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-4xl mx-auto"
           >
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200 p-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200 p-3 xs:p-6">
               {/* Upload Area */}
               <div
-                className={`relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300 ${
+                className={`relative border-2 border-dashed rounded-2xl p-6 xs:p-10 transition-all duration-300 ${
                   dragActive
                     ? "border-indigo-400 bg-indigo-50/50 scale-105"
                     : "border-slate-300 hover:border-slate-400 hover:bg-slate-50/50"
@@ -391,16 +393,16 @@ const UXAudit = () => {
                   </motion.div>
                 ) : (
                   <div className="text-center">
-                    <PhotoIcon className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                    <PhotoIcon className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                    <h3 className="text-lg xs:text-xl font-semibold text-slate-700 mb-1.5">
                       Upload your design
                     </h3>
-                    <p className="text-slate-500 mb-6">
+                    <p className="text-xs text-slate-500 mb-3 xs:mb-6">
                       PNG, JPG, or WebP up to 10MB
                     </p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center px-4 xs:px-6 py-2.5 xs:py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium text-sm xs:text-base rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                       <PhotoIcon className="h-5 w-5 mr-2" />
                       Choose File
@@ -428,16 +430,16 @@ const UXAudit = () => {
                   <button
                     onClick={analyzeDesign}
                     disabled={isAnalyzing}
-                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl"
+                    className="w-full py-3 xs:py-4 px-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-sm xs:text-base rounded-xl hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 xs:space-x-3 shadow-lg hover:shadow-xl"
                   >
                     {isAnalyzing ? (
                       <>
-                        <ArrowPathIcon className="h-6 w-6 animate-spin" />
+                        <ArrowPathIcon className="h-5 w-5 xs:h-6 xs:w-6 animate-spin" />
                         <span>Analyzing Design...</span>
                       </>
                     ) : (
                       <>
-                        <SparklesIcon className="h-6 w-6" />
+                        <SparklesIcon className="h-5 w-5 xs:h-6 xs:w-6" />
                         <span>Start Analysis</span>
                       </>
                     )}
@@ -454,47 +456,44 @@ const UXAudit = () => {
             className="space-y-4 max-w-6xl mx-auto"
           >
             {/* Header Actions */}
-            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 px-2 py-3 xs:p-4 shadow-sm">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-sm xs:text-xl font-bold text-slate-900">
                   Analysis Results
                 </h2>
-                <p className="text-sm text-slate-600">
+                <p className="text-[10px] xs:text-sm text-slate-600">
                   Comprehensive UX audit completed
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1 xs:space-x-3">
                 <button
                   onClick={() => {
                     setAuditReport(null);
                     setUploadedImage(null);
                     setActiveTab("overview");
                   }}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center space-x-2 font-medium"
+                  className="hidden xs:flex px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors items-center space-x-2 font-medium"
                 >
                   <ArrowRightIcon className="h-4 w-4 rotate-180" />
                   <span>New Analysis</span>
                 </button>
-                <button className="p-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-                  <ShareIcon className="h-5 w-5" />
-                </button>
                 <button
                   onClick={handleDownloadReport}
-                  className="p-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="p-1.5 xs:p-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
                 >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
+                  <ArrowDownTrayIcon className="h-4 xs:h-5 w-4 xs:w-5" />
                 </button>
               </div>
             </div>
 
             {/* Score Overview */}
-            <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200 p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex-1 pr-6">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+            <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200 p-2 xs:p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3 xs:mb-8">
+                <div className="flex-1 pr-2 xs:pr-6">
+                  <h3 className="text-base xs:text-2xl font-bold text-slate-900 mb-1 xs:mb-3">
                     Overall Score
                   </h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <p className="text-[10px] xs:text-base text-slate-600 leading-snug xs:leading-relaxed">
                     {(() => {
                       // First, check if there's an actual summary from the audit report
                       const actualSummary =
@@ -519,9 +518,9 @@ const UXAudit = () => {
                     })()}
                   </p>
                 </div>
-                <div className="text-right bg-white/30 rounded-xl p-4">
+                <div className="text-right bg-white/30 rounded-xl p-2 xs:p-4">
                   <div
-                    className={`text-5xl font-bold mb-1 ${getScoreColor(
+                    className={`text-2xl xs:text-5xl font-bold mb-1 ${getScoreColor(
                       auditReport?.executiveSummary?.overallScore ||
                         auditReport?.overallScore ||
                         0
@@ -531,7 +530,7 @@ const UXAudit = () => {
                       auditReport?.overallScore ||
                       0}
                   </div>
-                  <p className="text-slate-500 font-medium text-sm">
+                  <p className="text-slate-500 font-medium text-[10px] xs:text-sm">
                     {getScoreLabel(
                       auditReport?.executiveSummary?.overallScore ||
                         auditReport?.overallScore ||
@@ -542,7 +541,7 @@ const UXAudit = () => {
               </div>
 
               {/* Progress Bar */}
-              <div className="relative h-4 bg-slate-200 rounded-full overflow-hidden mb-8 shadow-inner">
+              <div className="relative h-2 xs:h-4 bg-slate-200 rounded-full overflow-hidden mb-4 xs:mb-8 shadow-inner">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{
@@ -580,43 +579,43 @@ const UXAudit = () => {
               </div>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
-                  <ExclamationTriangleIcon className="h-6 w-6 text-red-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-slate-900">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 xs:gap-6">
+                <div className="text-center p-2 xs:p-4 bg-white rounded-xl border border-slate-200">
+                  <ExclamationTriangleIcon className="h-4 xs:h-6 w-4 xs:w-6 text-red-500 mx-auto mb-1 xs:mb-2" />
+                  <div className="text-base xs:text-2xl font-bold text-slate-900">
                     {auditReport?.executiveSummary?.criticalIssuesCount ||
                       auditReport?.criticalIssues?.length ||
                       0}
                   </div>
-                  <div className="text-xs text-slate-600 font-medium">
+                  <div className="text-[9px] xs:text-xs text-slate-600 font-medium">
                     Critical Issues
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
-                  <ClockIcon className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                  <div className="text-lg font-bold text-slate-900">
+                <div className="text-center p-2 xs:p-4 bg-white rounded-xl border border-slate-200">
+                  <ClockIcon className="h-4 xs:h-6 w-4 xs:w-6 text-blue-500 mx-auto mb-1 xs:mb-2" />
+                  <div className="text-xs xs:text-lg font-bold text-slate-900">
                     {auditReport?.executiveSummary?.timeToImplementFixes ||
                       "2-3 weeks"}
                   </div>
-                  <div className="text-xs text-slate-600 font-medium">
+                  <div className="text-[9px] xs:text-xs text-slate-600 font-medium">
                     Time to Fix
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
-                  <ChartBarIcon className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-slate-900">
+                <div className="text-center p-2 xs:p-4 bg-white rounded-xl border border-slate-200">
+                  <ChartBarIcon className="h-4 xs:h-6 w-4 xs:w-6 text-emerald-500 mx-auto mb-1 xs:mb-2" />
+                  <div className="text-base xs:text-2xl font-bold text-slate-900">
                     {auditReport?.quickWins?.length || 0}
                   </div>
-                  <div className="text-xs text-slate-600 font-medium">
+                  <div className="text-[9px] xs:text-xs text-slate-600 font-medium">
                     Quick Wins
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
-                  <TrophyIcon className="h-6 w-6 text-amber-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-slate-900">
+                <div className="text-center p-2 xs:p-4 bg-white rounded-xl border border-slate-200">
+                  <TrophyIcon className="h-4 xs:h-6 w-4 xs:w-6 text-amber-500 mx-auto mb-1 xs:mb-2" />
+                  <div className="text-base xs:text-2xl font-bold text-slate-900">
                     {auditReport?.strengths?.length || 0}
                   </div>
-                  <div className="text-xs text-slate-600 font-medium">
+                  <div className="text-[9px] xs:text-xs text-slate-600 font-medium">
                     Strengths
                   </div>
                 </div>
@@ -684,19 +683,21 @@ const UXAudit = () => {
             </div>
 
             {/* Tab Navigation */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-2 shadow-sm">
-              <div className="flex justify-center space-x-1 overflow-x-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-1 xs:p-2 shadow-sm">
+              <div className="grid grid-cols-3 xs:flex xs:flex-wrap xs:justify-center gap-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 whitespace-nowrap ${
+                    className={`flex items-center justify-center space-x-0.5 xs:space-x-2 px-0.5 xs:px-6 py-1.5 xs:py-3 rounded-lg xs:rounded-xl text-[9px] xs:text-base font-medium transition-all duration-200 whitespace-nowrap ${
                       activeTab === tab.id
                         ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     }`}
                   >
-                    {tab.icon}
+                    <span className="hidden xs:inline h-3 w-3 xs:h-4 xs:w-4">
+                      {tab.icon}
+                    </span>
                     <span>{tab.label}</span>
                   </button>
                 ))}
@@ -718,7 +719,7 @@ const UXAudit = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Strengths */}
                     <div
-                      className={`p-8 rounded-2xl shadow-lg ${(() => {
+                      className={`p-3 xs:p-8 rounded-2xl shadow-lg ${(() => {
                         const score =
                           auditReport?.executiveSummary?.overallScore ||
                           auditReport?.overallScore ||
@@ -732,9 +733,9 @@ const UXAudit = () => {
                         return "bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 border border-slate-200";
                       })()}`}
                     >
-                      <div className="flex items-center mb-6">
+                      <div className="flex items-center mb-3 xs:mb-6">
                         <HeartIcon
-                          className={`h-6 w-6 mr-4 ${(() => {
+                          className={`h-4 xs:h-6 w-4 xs:w-6 mr-2 xs:mr-4 ${(() => {
                             const score =
                               auditReport?.executiveSummary?.overallScore ||
                               auditReport?.overallScore ||
@@ -745,11 +746,11 @@ const UXAudit = () => {
                             return "text-slate-600";
                           })()}`}
                         />
-                        <h3 className="text-xl font-bold text-slate-900">
+                        <h3 className="text-base xs:text-xl font-bold text-slate-900">
                           Strengths
                         </h3>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2 xs:space-y-3">
                         {(() => {
                           const score =
                             auditReport?.executiveSummary?.overallScore ||
@@ -772,10 +773,10 @@ const UXAudit = () => {
                             return strengths.map((strength, index) => (
                               <div
                                 key={index}
-                                className="flex items-start space-x-3"
+                                className="flex items-start space-x-2 xs:space-x-3"
                               >
-                                <CheckCircleIcon className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                                <p className="text-slate-700 text-base leading-relaxed">
+                                <CheckCircleIcon className="h-4 xs:h-5 w-4 xs:w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                <p className="text-slate-700 text-xs xs:text-base leading-relaxed">
                                   {strength}
                                 </p>
                               </div>
@@ -795,40 +796,40 @@ const UXAudit = () => {
                     </div>
 
                     {/* Quick Wins */}
-                    <div className="p-8 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 rounded-2xl border border-amber-200 shadow-lg">
-                      <div className="flex items-center mb-6">
-                        <BoltIcon className="h-6 w-6 text-amber-600 mr-4" />
-                        <h3 className="text-xl font-bold text-slate-900">
+                    <div className="p-3 xs:p-8 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 rounded-2xl border border-amber-200 shadow-lg">
+                      <div className="flex items-center mb-3 xs:mb-6">
+                        <BoltIcon className="h-4 xs:h-6 w-4 xs:w-6 text-amber-600 mr-2 xs:mr-4" />
+                        <h3 className="text-base xs:text-xl font-bold text-slate-900">
                           Quick Wins
                         </h3>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2 xs:space-y-3">
                         {(auditReport?.quickWins || []).map((win, index) => (
                           <div
                             key={index}
-                            className="p-3 bg-white rounded-xl border border-amber-300 shadow-sm"
+                            className="p-2 xs:p-3 bg-white rounded-xl border border-amber-300 shadow-sm"
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="text-base font-semibold text-slate-900 leading-tight flex-1">
+                            <div className="flex items-start justify-between mb-1 xs:mb-2">
+                              <h4 className="text-xs xs:text-base font-semibold text-slate-900 leading-tight flex-1">
                                 {typeof win === "string" ? win : win.title}
                               </h4>
                               {typeof win === "object" &&
                                 win.timeToImplement && (
-                                  <span className="px-3 py-1 bg-amber-200 text-amber-900 rounded-lg text-xs font-medium whitespace-nowrap ml-4">
+                                  <span className="px-2 xs:px-3 py-0.5 xs:py-1 bg-amber-200 text-amber-900 rounded-lg text-[10px] xs:text-xs font-medium whitespace-nowrap ml-2 xs:ml-4">
                                     {win.timeToImplement}
                                   </span>
                                 )}
                             </div>
 
                             {typeof win === "object" && win.implementation && (
-                              <p className="text-slate-700 leading-relaxed text-sm mb-2">
+                              <p className="text-slate-700 leading-relaxed text-[10px] xs:text-sm mb-1 xs:mb-2">
                                 {win.implementation}
                               </p>
                             )}
 
                             {typeof win === "object" && win.expectedImpact && (
-                              <div className="flex items-start space-x-2 p-2 bg-green-50 rounded-lg border-l-4 border-green-400">
-                                <span className="text-sm text-green-800 font-medium">
+                              <div className="flex items-start space-x-1 xs:space-x-2 p-1.5 xs:p-2 bg-green-50 rounded-lg border-l-2 xs:border-l-4 border-green-400">
+                                <span className="text-[10px] xs:text-sm text-green-800 font-medium">
                                   Impact: {win.expectedImpact}
                                 </span>
                               </div>
@@ -857,24 +858,24 @@ const UXAudit = () => {
                 {/* Accessibility Tab */}
                 {activeTab === "accessibility" &&
                   auditReport?.categories?.accessibility && (
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center space-x-3">
-                          <ShieldCheckIcon className="h-7 w-7 text-blue-500" />
-                          <h3 className="text-2xl font-semibold text-slate-900">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-3 xs:p-8 shadow-sm">
+                      <div className="flex items-center justify-between mb-4 xs:mb-8">
+                        <div className="flex items-center space-x-2 xs:space-x-3">
+                          <ShieldCheckIcon className="h-5 xs:h-7 w-5 xs:w-7 text-blue-500" />
+                          <h3 className="text-base xs:text-2xl font-semibold text-slate-900">
                             Accessibility Analysis
                           </h3>
                         </div>
                         <div className="text-right">
                           <div
-                            className={`text-3xl font-bold ${getScoreColor(
+                            className={`text-xl xs:text-3xl font-bold ${getScoreColor(
                               auditReport.categories.accessibility.score || 0
                             )}`}
                           >
                             {auditReport.categories.accessibility.score || 0}
                             /100
                           </div>
-                          <p className="text-slate-500">
+                          <p className="text-xs xs:text-base text-slate-500">
                             {getScoreLabel(
                               auditReport.categories.accessibility.score || 0
                             )}
@@ -888,19 +889,19 @@ const UXAudit = () => {
                         ).map((issue, index) => (
                           <div
                             key={index}
-                            className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                            className="p-3 xs:p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
                           >
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex-shrink-0 p-2.5 rounded-lg bg-red-50">
+                            <div className="flex items-start justify-between mb-2 xs:mb-4">
+                              <div className="flex items-center space-x-2 xs:space-x-3">
+                                <div className="flex-shrink-0 p-1.5 xs:p-2.5 rounded-lg bg-red-50">
                                   {getIssueIcon(issue.type)}
                                 </div>
-                                <h5 className="text-base font-semibold text-slate-900">
+                                <h5 className="text-xs xs:text-base font-semibold text-slate-900">
                                   {issue.title || "Issue"}
                                 </h5>
                               </div>
                               <span
-                                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${getSeverityColor(
+                                className={`px-2 xs:px-3 py-0.5 xs:py-1 rounded-md text-[10px] xs:text-xs font-semibold whitespace-nowrap ${getSeverityColor(
                                   issue.severity || "low"
                                 )}`}
                               >
@@ -908,17 +909,17 @@ const UXAudit = () => {
                               </span>
                             </div>
 
-                            <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                            <p className="text-slate-600 leading-relaxed text-[10px] xs:text-sm mb-2 xs:mb-4">
                               {issue.description || ""}
                             </p>
 
                             {issue.suggestion && (
-                              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                                <div className="flex items-start space-x-2">
-                                  <span className="text-blue-600 flex-shrink-0 mt-0.5">
+                              <div className="p-2 xs:p-3 bg-blue-50 rounded-lg border-l-2 xs:border-l-4 border-blue-500">
+                                <div className="flex items-start space-x-1 xs:space-x-2">
+                                  <span className="text-blue-600 flex-shrink-0 mt-0.5 text-xs xs:text-base">
                                     💡
                                   </span>
-                                  <p className="text-blue-700 text-sm leading-relaxed">
+                                  <p className="text-blue-700 text-[10px] xs:text-sm leading-relaxed">
                                     {issue.suggestion}
                                   </p>
                                 </div>
@@ -948,17 +949,17 @@ const UXAudit = () => {
 
                 {/* Usability Tab */}
                 {activeTab === "usability" && (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center space-x-3">
-                        <CursorArrowRaysIcon className="h-7 w-7 text-purple-500" />
-                        <h3 className="text-2xl font-semibold text-slate-900">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-3 xs:p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-4 xs:mb-8">
+                      <div className="flex items-center space-x-2 xs:space-x-3">
+                        <CursorArrowRaysIcon className="h-5 xs:h-7 w-5 xs:w-7 text-purple-500" />
+                        <h3 className="text-base xs:text-2xl font-semibold text-slate-900">
                           Usability Analysis
                         </h3>
                       </div>
                       <div className="text-right">
                         <div
-                          className={`text-3xl font-bold ${getScoreColor(
+                          className={`text-xl xs:text-3xl font-bold ${getScoreColor(
                             auditReport?.usabilityAnalysis?.overallScore ||
                               auditReport?.categories?.usability?.score ||
                               0
@@ -969,7 +970,7 @@ const UXAudit = () => {
                             0}
                           /100
                         </div>
-                        <p className="text-slate-500">
+                        <p className="text-xs xs:text-base text-slate-500">
                           {getScoreLabel(
                             auditReport?.usabilityAnalysis?.overallScore ||
                               auditReport?.categories?.usability?.score ||
@@ -980,44 +981,44 @@ const UXAudit = () => {
                     </div>
 
                     {/* User Flow Efficiency and Navigation Clarity Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-6 mb-4 xs:mb-8">
                       {/* User Flow Efficiency */}
                       {auditReport?.usabilityAnalysis?.userFlowEfficiency && (
-                        <div className="p-8 bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-100 rounded-2xl border border-purple-200 shadow-lg">
-                          <div className="flex items-center justify-between mb-6">
+                        <div className="p-3 xs:p-8 bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-100 rounded-2xl border border-purple-200 shadow-lg">
+                          <div className="flex items-center justify-between mb-3 xs:mb-6">
                             <div className="flex items-center">
-                              <BoltIcon className="h-6 w-6 text-purple-600 mr-4" />
-                              <h4 className="text-xl font-bold text-slate-900">
+                              <BoltIcon className="h-4 xs:h-6 w-4 xs:w-6 text-purple-600 mr-2 xs:mr-4" />
+                              <h4 className="text-sm xs:text-xl font-bold text-slate-900">
                                 User Flow Efficiency
                               </h4>
                             </div>
-                            <div className="text-3xl font-bold text-purple-600">
+                            <div className="text-lg xs:text-3xl font-bold text-purple-600">
                               {
                                 auditReport.usabilityAnalysis.userFlowEfficiency
                                   .score
                               }
-                              <span className="text-lg text-purple-300">
+                              <span className="text-xs xs:text-lg text-purple-300">
                                 /100
                               </span>
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <div className="p-3">
-                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                          <div className="space-y-2 xs:space-y-3">
+                            <div className="p-2 xs:p-3">
+                              <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                 Clicks to Goal
                               </span>
-                              <p className="text-slate-700 text-sm">
+                              <p className="text-slate-700 text-[10px] xs:text-sm">
                                 {
                                   auditReport.usabilityAnalysis
                                     .userFlowEfficiency.clicksToGoal
                                 }
                               </p>
                             </div>
-                            <div className="p-3">
-                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                            <div className="p-2 xs:p-3">
+                              <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                 Cognitive Load
                               </span>
-                              <p className="text-slate-700 text-sm">
+                              <p className="text-slate-700 text-[10px] xs:text-sm">
                                 {
                                   auditReport.usabilityAnalysis
                                     .userFlowEfficiency.cognitiveLoad
@@ -1027,11 +1028,11 @@ const UXAudit = () => {
                           </div>
                           {auditReport.usabilityAnalysis.userFlowEfficiency
                             .errorPrevention && (
-                            <div className="mt-4 p-3">
-                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                            <div className="mt-2 xs:mt-4 p-2 xs:p-3">
+                              <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                 Error Prevention
                               </span>
-                              <p className="text-slate-700 text-sm">
+                              <p className="text-slate-700 text-[10px] xs:text-sm">
                                 {
                                   auditReport.usabilityAnalysis
                                     .userFlowEfficiency.errorPrevention
@@ -1044,30 +1045,30 @@ const UXAudit = () => {
 
                       {/* Navigation Clarity */}
                       {auditReport?.usabilityAnalysis?.navigationClarity && (
-                        <div className="p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
-                          <div className="flex items-center justify-between mb-6">
+                        <div className="p-3 xs:p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
+                          <div className="flex items-center justify-between mb-3 xs:mb-6">
                             <div className="flex items-center">
-                              <Square3Stack3DIcon className="h-6 w-6 text-blue-600 mr-4" />
-                              <h4 className="text-xl font-bold text-slate-900">
+                              <Square3Stack3DIcon className="h-4 xs:h-6 w-4 xs:w-6 text-blue-600 mr-2 xs:mr-4" />
+                              <h4 className="text-sm xs:text-xl font-bold text-slate-900">
                                 Navigation Clarity
                               </h4>
                             </div>
-                            <div className="text-3xl font-bold text-blue-600">
+                            <div className="text-lg xs:text-3xl font-bold text-blue-600">
                               {
                                 auditReport.usabilityAnalysis.navigationClarity
                                   .score
                               }
-                              <span className="text-lg text-blue-300">
+                              <span className="text-xs xs:text-lg text-blue-300">
                                 /100
                               </span>
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <div className="p-3">
-                              <span className="font-semibold text-slate-900 text-sm block mb-1">
+                          <div className="space-y-2 xs:space-y-3">
+                            <div className="p-2 xs:p-3">
+                              <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                 Menu Structure
                               </span>
-                              <p className="text-slate-700 text-sm">
+                              <p className="text-slate-700 text-[10px] xs:text-sm">
                                 {
                                   auditReport.usabilityAnalysis
                                     .navigationClarity.menuStructure
@@ -1076,11 +1077,11 @@ const UXAudit = () => {
                             </div>
                             {auditReport.usabilityAnalysis.navigationClarity
                               .breadcrumbs && (
-                              <div className="p-3">
-                                <span className="font-semibold text-slate-900 text-sm block mb-1">
+                              <div className="p-2 xs:p-3">
+                                <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                   Breadcrumbs
                                 </span>
-                                <p className="text-slate-700 text-sm">
+                                <p className="text-slate-700 text-[10px] xs:text-sm">
                                   {
                                     auditReport.usabilityAnalysis
                                       .navigationClarity.breadcrumbs
@@ -1090,11 +1091,11 @@ const UXAudit = () => {
                             )}
                             {auditReport.usabilityAnalysis.navigationClarity
                               .searchability && (
-                              <div className="p-3">
-                                <span className="font-semibold text-slate-900 text-sm block mb-1">
+                              <div className="p-2 xs:p-3">
+                                <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                   Search
                                 </span>
-                                <p className="text-slate-700 text-sm">
+                                <p className="text-slate-700 text-[10px] xs:text-sm">
                                   {
                                     auditReport.usabilityAnalysis
                                       .navigationClarity.searchability
@@ -1109,27 +1110,27 @@ const UXAudit = () => {
 
                     {/* Usability Issues */}
                     <div className="space-y-6">
-                      <h4 className="text-xl font-semibold text-slate-900">
+                      <h4 className="text-base xs:text-xl font-semibold text-slate-900">
                         Issues & Recommendations
                       </h4>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-6">
                         {(auditReport?.categories?.usability?.issues || []).map(
                           (issue, index) => (
                             <div
                               key={index}
-                              className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                              className="p-3 xs:p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
                             >
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                  <div className="flex-shrink-0 p-2.5 rounded-lg bg-purple-50">
+                              <div className="flex items-start justify-between mb-2 xs:mb-4">
+                                <div className="flex items-center space-x-2 xs:space-x-3">
+                                  <div className="flex-shrink-0 p-1.5 xs:p-2.5 rounded-lg bg-purple-50">
                                     {getIssueIcon(issue.type)}
                                   </div>
-                                  <h5 className="text-base font-semibold text-slate-900">
+                                  <h5 className="text-xs xs:text-base font-semibold text-slate-900">
                                     {issue.title || "Issue"}
                                   </h5>
                                 </div>
                                 <span
-                                  className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${getSeverityColor(
+                                  className={`px-2 xs:px-3 py-0.5 xs:py-1 rounded-md text-[10px] xs:text-xs font-semibold whitespace-nowrap ${getSeverityColor(
                                     issue.severity || "low"
                                   )}`}
                                 >
@@ -1137,17 +1138,17 @@ const UXAudit = () => {
                                 </span>
                               </div>
 
-                              <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                              <p className="text-slate-600 leading-relaxed text-[10px] xs:text-sm mb-2 xs:mb-4">
                                 {issue.description || ""}
                               </p>
 
                               {issue.suggestion && (
-                                <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-                                  <div className="flex items-start space-x-2">
-                                    <span className="text-purple-600 flex-shrink-0 mt-0.5">
+                                <div className="p-2 xs:p-3 bg-purple-50 rounded-lg border-l-2 xs:border-l-4 border-purple-500">
+                                  <div className="flex items-start space-x-1 xs:space-x-2">
+                                    <span className="text-purple-600 flex-shrink-0 mt-0.5 text-xs xs:text-base">
                                       💡
                                     </span>
-                                    <p className="text-purple-700 text-sm leading-relaxed">
+                                    <p className="text-purple-700 text-[10px] xs:text-sm leading-relaxed">
                                       {issue.suggestion}
                                     </p>
                                   </div>
@@ -1168,17 +1169,17 @@ const UXAudit = () => {
                     {auditReport?.designAnalysis && (
                       <>
                         {/* Overall Design Score Header with Cards Inside */}
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
-                          <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                              <SwatchIcon className="h-7 w-7 text-purple-500" />
-                              <h3 className="text-2xl font-semibold text-slate-900">
+                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-3 xs:p-8 shadow-sm">
+                          <div className="flex items-center justify-between mb-4 xs:mb-8">
+                            <div className="flex items-center space-x-2 xs:space-x-3">
+                              <SwatchIcon className="h-5 xs:h-7 w-5 xs:w-7 text-purple-500" />
+                              <h3 className="text-base xs:text-2xl font-semibold text-slate-900">
                                 Design Analysis
                               </h3>
                             </div>
                             <div className="text-right">
                               <div
-                                className={`text-3xl font-bold ${getScoreColor(
+                                className={`text-xl xs:text-3xl font-bold ${getScoreColor(
                                   auditReport?.categories?.visualDesign
                                     ?.score || 0
                                 )}`}
@@ -1187,7 +1188,7 @@ const UXAudit = () => {
                                   0}
                                 /100
                               </div>
-                              <p className="text-slate-500">
+                              <p className="text-xs xs:text-base text-slate-500">
                                 {getScoreLabel(
                                   auditReport?.categories?.visualDesign
                                     ?.score || 0
@@ -1197,28 +1198,28 @@ const UXAudit = () => {
                           </div>
 
                           {/* Visual Hierarchy, Color Usage, Typography Grid */}
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 xs:gap-6">
                             {/* Visual Hierarchy */}
                             {auditReport.designAnalysis.visualHierarchy && (
-                              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200/50 shadow-sm">
-                                <div className="flex items-start justify-between mb-4">
-                                  <h4 className="text-lg font-bold text-slate-900">
+                              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-3 xs:p-6 border border-pink-200/50 shadow-sm">
+                                <div className="flex items-start justify-between mb-2 xs:mb-4">
+                                  <h4 className="text-sm xs:text-lg font-bold text-slate-900">
                                     Visual Hierarchy
                                   </h4>
                                   <div className="text-right">
-                                    <span className="text-2xl font-bold text-pink-600">
+                                    <span className="text-lg xs:text-2xl font-bold text-pink-600">
                                       {
                                         auditReport.designAnalysis
                                           .visualHierarchy.score
                                       }
                                     </span>
-                                    <span className="text-sm text-pink-300 font-medium">
+                                    <span className="text-[10px] xs:text-sm text-pink-300 font-medium">
                                       /100
                                     </span>
                                   </div>
                                 </div>
 
-                                <p className="text-slate-700 mb-4 text-sm leading-relaxed">
+                                <p className="text-slate-700 mb-2 xs:mb-4 text-[10px] xs:text-sm leading-relaxed">
                                   {
                                     auditReport.designAnalysis.visualHierarchy
                                       .analysis
@@ -1231,12 +1232,12 @@ const UXAudit = () => {
                                     <h5 className="font-semibold text-slate-900 text-xs mb-2">
                                       UX Laws Applied:
                                     </h5>
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-wrap gap-1 xs:gap-1.5">
                                       {auditReport.designAnalysis.visualHierarchy.uxLawsApplied.map(
                                         (law, index) => (
                                           <span
                                             key={index}
-                                            className="px-2 py-1 bg-pink-200 text-pink-800 rounded-full text-xs font-medium"
+                                            className="px-1.5 xs:px-2 py-0.5 xs:py-1 bg-pink-200 text-pink-800 rounded-full text-[9px] xs:text-xs font-medium"
                                           >
                                             {law}
                                           </span>
@@ -1249,10 +1250,10 @@ const UXAudit = () => {
                                 {auditReport.designAnalysis.visualHierarchy
                                   .improvements && (
                                   <div>
-                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                    <h5 className="font-semibold text-slate-900 text-[10px] xs:text-xs mb-1 xs:mb-2">
                                       Improvements:
                                     </h5>
-                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                    <p className="text-slate-700 text-[10px] xs:text-xs leading-relaxed">
                                       {
                                         auditReport.designAnalysis
                                           .visualHierarchy.improvements
@@ -1265,19 +1266,19 @@ const UXAudit = () => {
 
                             {/* Color Usage */}
                             {auditReport.designAnalysis.colorUsage && (
-                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
-                                <div className="flex items-start justify-between mb-4">
-                                  <h4 className="text-lg font-bold text-slate-900">
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-3 xs:p-6 border border-blue-200/50">
+                                <div className="flex items-start justify-between mb-2 xs:mb-4">
+                                  <h4 className="text-sm xs:text-lg font-bold text-slate-900">
                                     Color Usage
                                   </h4>
                                   <div className="text-right">
-                                    <span className="text-2xl font-bold text-blue-600">
+                                    <span className="text-lg xs:text-2xl font-bold text-blue-600">
                                       {
                                         auditReport.designAnalysis.colorUsage
                                           .score
                                       }
                                     </span>
-                                    <span className="text-sm text-blue-300 font-medium">
+                                    <span className="text-[10px] xs:text-sm text-blue-300 font-medium">
                                       /100
                                     </span>
                                   </div>
@@ -1285,26 +1286,26 @@ const UXAudit = () => {
 
                                 {auditReport.designAnalysis.colorUsage
                                   .contrastRatios && (
-                                  <div className="grid grid-cols-2 gap-2 mb-4">
-                                    <div className="bg-white/70 rounded-lg p-3 text-center border border-blue-200">
-                                      <div className="text-lg font-bold text-slate-900">
+                                  <div className="grid grid-cols-2 gap-1 xs:gap-2 mb-2 xs:mb-4">
+                                    <div className="bg-white/70 rounded-lg p-2 xs:p-3 text-center border border-blue-200">
+                                      <div className="text-base xs:text-lg font-bold text-slate-900">
                                         {
                                           auditReport.designAnalysis.colorUsage
                                             .contrastRatios.primary
                                         }
                                       </div>
-                                      <div className="text-xs text-slate-600 font-medium">
+                                      <div className="text-[10px] xs:text-xs text-slate-600 font-medium">
                                         Primary Contrast
                                       </div>
                                     </div>
-                                    <div className="bg-white/70 rounded-lg p-3 text-center border border-blue-200">
-                                      <div className="text-lg font-bold text-slate-900">
+                                    <div className="bg-white/70 rounded-lg p-2 xs:p-3 text-center border border-blue-200">
+                                      <div className="text-base xs:text-lg font-bold text-slate-900">
                                         {
                                           auditReport.designAnalysis.colorUsage
                                             .contrastRatios.secondary
                                         }
                                       </div>
-                                      <div className="text-xs text-slate-600 font-medium">
+                                      <div className="text-[10px] xs:text-xs text-slate-600 font-medium">
                                         Secondary Contrast
                                       </div>
                                     </div>
@@ -1313,11 +1314,11 @@ const UXAudit = () => {
 
                                 {auditReport.designAnalysis.colorUsage
                                   .psychologyImpact && (
-                                  <div className="mb-4">
-                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                  <div className="mb-2 xs:mb-4">
+                                    <h5 className="font-semibold text-slate-900 text-[10px] xs:text-xs mb-1 xs:mb-2">
                                       Psychology Impact:
                                     </h5>
-                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                    <p className="text-slate-700 text-[10px] xs:text-xs leading-relaxed">
                                       {
                                         auditReport.designAnalysis.colorUsage
                                           .psychologyImpact
@@ -1329,10 +1330,10 @@ const UXAudit = () => {
                                 {auditReport.designAnalysis.colorUsage
                                   .improvements && (
                                   <div>
-                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                    <h5 className="font-semibold text-slate-900 text-[10px] xs:text-xs mb-1 xs:mb-2">
                                       Improvements:
                                     </h5>
-                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                    <p className="text-slate-700 text-[10px] xs:text-xs leading-relaxed">
                                       {
                                         auditReport.designAnalysis.colorUsage
                                           .improvements
@@ -1345,44 +1346,44 @@ const UXAudit = () => {
 
                             {/* Typography */}
                             {auditReport.designAnalysis.typography && (
-                              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-200/50">
-                                <div className="flex items-start justify-between mb-4">
-                                  <h4 className="text-lg font-bold text-slate-900">
+                              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-3 xs:p-6 border border-emerald-200/50">
+                                <div className="flex items-start justify-between mb-2 xs:mb-4">
+                                  <h4 className="text-sm xs:text-lg font-bold text-slate-900">
                                     Typography
                                   </h4>
                                   <div className="text-right">
-                                    <span className="text-2xl font-bold text-emerald-600">
+                                    <span className="text-lg xs:text-2xl font-bold text-emerald-600">
                                       {
                                         auditReport.designAnalysis.typography
                                           .score
                                       }
                                     </span>
-                                    <span className="text-sm text-emerald-300 font-medium">
+                                    <span className="text-[10px] xs:text-sm text-emerald-300 font-medium">
                                       /100
                                     </span>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                  <div className="bg-white/70 rounded-lg p-3 text-center border border-emerald-200">
-                                    <div className="text-xl font-bold text-slate-900">
+                                <div className="grid grid-cols-2 gap-1 xs:gap-2 mb-2 xs:mb-4">
+                                  <div className="bg-white/70 rounded-lg p-2 xs:p-3 text-center border border-emerald-200">
+                                    <div className="text-base xs:text-xl font-bold text-slate-900">
                                       {
                                         auditReport.designAnalysis.typography
                                           .readabilityScore
                                       }
                                     </div>
-                                    <div className="text-xs text-slate-600 font-medium">
+                                    <div className="text-[10px] xs:text-xs text-slate-600 font-medium">
                                       Readability Score
                                     </div>
                                   </div>
-                                  <div className="bg-white/70 rounded-lg p-3 text-center border border-emerald-200">
-                                    <div className="text-xl font-bold text-slate-900">
+                                  <div className="bg-white/70 rounded-lg p-2 xs:p-3 text-center border border-emerald-200">
+                                    <div className="text-base xs:text-xl font-bold text-slate-900">
                                       {
                                         auditReport.designAnalysis.typography
                                           .hierarchyEffectiveness
                                       }
                                     </div>
-                                    <div className="text-xs text-slate-600 font-medium">
+                                    <div className="text-[10px] xs:text-xs text-slate-600 font-medium">
                                       Hierarchy Effectiveness
                                     </div>
                                   </div>
@@ -1390,11 +1391,11 @@ const UXAudit = () => {
 
                                 {auditReport.designAnalysis.typography
                                   .emotionalResonance && (
-                                  <div className="mb-4">
-                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                  <div className="mb-2 xs:mb-4">
+                                    <h5 className="font-semibold text-slate-900 text-[10px] xs:text-xs mb-1 xs:mb-2">
                                       Emotional Resonance:
                                     </h5>
-                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                    <p className="text-slate-700 text-[10px] xs:text-xs leading-relaxed">
                                       {
                                         auditReport.designAnalysis.typography
                                           .emotionalResonance
@@ -1406,10 +1407,10 @@ const UXAudit = () => {
                                 {auditReport.designAnalysis.typography
                                   .improvements && (
                                   <div>
-                                    <h5 className="font-semibold text-slate-900 text-xs mb-2">
+                                    <h5 className="font-semibold text-slate-900 text-[10px] xs:text-xs mb-1 xs:mb-2">
                                       Improvements:
                                     </h5>
-                                    <p className="text-slate-700 text-xs leading-relaxed">
+                                    <p className="text-slate-700 text-[10px] xs:text-xs leading-relaxed">
                                       {
                                         auditReport.designAnalysis.typography
                                           .improvements
@@ -1425,20 +1426,20 @@ const UXAudit = () => {
                           {auditReport?.categories?.visualDesign?.issues &&
                             auditReport.categories.visualDesign.issues.length >
                               0 && (
-                              <div className="mt-8">
-                                <h4 className="text-xl font-semibold text-slate-900 mb-6">
+                              <div className="mt-4 xs:mt-8">
+                                <h4 className="text-base xs:text-xl font-semibold text-slate-900 mb-3 xs:mb-6">
                                   Design Issues & Recommendations
                                 </h4>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-96 overflow-y-auto custom-scrollbar">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-6 max-h-96 overflow-y-auto custom-scrollbar">
                                   {auditReport.categories.visualDesign.issues.map(
                                     (issue, index) => (
                                       <div
                                         key={index}
-                                        className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
+                                        className="p-3 xs:p-6 bg-white rounded-xl border border-slate-200 shadow-sm"
                                       >
-                                        <div className="flex items-start justify-between mb-4">
-                                          <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0 p-2.5 rounded-lg bg-pink-50">
+                                        <div className="flex items-start justify-between mb-2 xs:mb-4">
+                                          <div className="flex items-center space-x-2 xs:space-x-3">
+                                            <div className="flex-shrink-0 p-1.5 xs:p-2.5 rounded-lg bg-pink-50">
                                               {getIssueIcon(issue.type)}
                                             </div>
                                             <h5 className="text-base font-semibold text-slate-900">
@@ -1454,17 +1455,17 @@ const UXAudit = () => {
                                           </span>
                                         </div>
 
-                                        <p className="text-slate-600 leading-relaxed text-sm mb-4">
+                                        <p className="text-slate-600 leading-relaxed text-[10px] xs:text-sm mb-2 xs:mb-4">
                                           {issue.description || ""}
                                         </p>
 
                                         {issue.suggestion && (
-                                          <div className="p-3 bg-pink-50 rounded-lg border-l-4 border-pink-500">
-                                            <div className="flex items-start space-x-2">
-                                              <span className="text-pink-600 flex-shrink-0 mt-0.5">
+                                          <div className="p-2 xs:p-3 bg-pink-50 rounded-lg border-l-2 xs:border-l-4 border-pink-500">
+                                            <div className="flex items-start space-x-1 xs:space-x-2">
+                                              <span className="text-pink-600 flex-shrink-0 mt-0.5 text-xs xs:text-base">
                                                 💡
                                               </span>
-                                              <p className="text-pink-700 text-sm leading-relaxed">
+                                              <p className="text-pink-700 text-[10px] xs:text-sm leading-relaxed">
                                                 {issue.suggestion}
                                               </p>
                                             </div>
@@ -1484,17 +1485,17 @@ const UXAudit = () => {
 
                 {/* Conversion Tab */}
                 {activeTab === "conversion" && (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center space-x-3">
-                        <ChartBarIcon className="h-7 w-7 text-emerald-500" />
-                        <h3 className="text-2xl font-semibold text-slate-900">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-3 xs:p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-4 xs:mb-8">
+                      <div className="flex items-center space-x-2 xs:space-x-3">
+                        <ChartBarIcon className="h-5 xs:h-7 w-5 xs:w-7 text-emerald-500" />
+                        <h3 className="text-base xs:text-2xl font-semibold text-slate-900">
                           Conversion Optimization
                         </h3>
                       </div>
                       <div className="text-right">
                         <div
-                          className={`text-3xl font-bold ${getScoreColor(
+                          className={`text-xl xs:text-3xl font-bold ${getScoreColor(
                             auditReport?.conversionOptimization?.overallScore ||
                               0
                           )}`}
@@ -1503,7 +1504,7 @@ const UXAudit = () => {
                             0}
                           /100
                         </div>
-                        <p className="text-slate-500">
+                        <p className="text-xs xs:text-base text-slate-500">
                           {getScoreLabel(
                             auditReport?.conversionOptimization?.overallScore ||
                               0
@@ -1513,36 +1514,36 @@ const UXAudit = () => {
                     </div>
 
                     {auditReport?.conversionOptimization && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-6">
                         {/* CTA Effectiveness */}
                         {auditReport.conversionOptimization
                           .ctaEffectiveness && (
-                          <div className="p-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-2xl border border-emerald-200 shadow-lg">
-                            <div className="flex items-center justify-between mb-6">
+                          <div className="p-3 xs:p-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-2xl border border-emerald-200 shadow-lg">
+                            <div className="flex items-center justify-between mb-3 xs:mb-6">
                               <div className="flex items-center">
-                                <CursorArrowRaysIcon className="h-6 w-6 text-emerald-600 mr-4" />
-                                <h4 className="text-xl font-bold text-slate-900">
+                                <CursorArrowRaysIcon className="h-4 xs:h-6 w-4 xs:w-6 text-emerald-600 mr-2 xs:mr-4" />
+                                <h4 className="text-sm xs:text-xl font-bold text-slate-900">
                                   CTA Effectiveness
                                 </h4>
                               </div>
-                              <div className="text-3xl font-bold text-emerald-600">
+                              <div className="text-lg xs:text-3xl font-bold text-emerald-600">
                                 {
                                   auditReport.conversionOptimization
                                     .ctaEffectiveness.score
                                 }
-                                <span className="text-lg text-emerald-300">
+                                <span className="text-xs xs:text-lg text-emerald-300">
                                   /100
                                 </span>
                               </div>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2 xs:space-y-3">
                               {auditReport.conversionOptimization
                                 .ctaEffectiveness.placement && (
-                                <div className="p-3">
-                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                <div className="p-2 xs:p-3">
+                                  <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                     Placement
                                   </span>
-                                  <p className="text-slate-700 text-sm">
+                                  <p className="text-slate-700 text-[10px] xs:text-sm">
                                     {
                                       auditReport.conversionOptimization
                                         .ctaEffectiveness.placement
@@ -1552,11 +1553,11 @@ const UXAudit = () => {
                               )}
                               {auditReport.conversionOptimization
                                 .ctaEffectiveness.copyPersuasiveness && (
-                                <div className="p-3">
-                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                <div className="p-2 xs:p-3">
+                                  <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                     Copy Persuasiveness
                                   </span>
-                                  <p className="text-slate-700 text-sm">
+                                  <p className="text-slate-700 text-[10px] xs:text-sm">
                                     {
                                       auditReport.conversionOptimization
                                         .ctaEffectiveness.copyPersuasiveness
@@ -1566,11 +1567,11 @@ const UXAudit = () => {
                               )}
                               {auditReport.conversionOptimization
                                 .ctaEffectiveness.visualHierarchy && (
-                                <div className="p-3">
-                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                <div className="p-2 xs:p-3">
+                                  <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                     Visual Hierarchy
                                   </span>
-                                  <p className="text-slate-700 text-sm">
+                                  <p className="text-slate-700 text-[10px] xs:text-sm">
                                     {
                                       auditReport.conversionOptimization
                                         .ctaEffectiveness.visualHierarchy
@@ -1584,42 +1585,42 @@ const UXAudit = () => {
 
                         {/* Trust Signals */}
                         {auditReport.conversionOptimization.trustSignals && (
-                          <div className="p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
-                            <div className="flex items-center justify-between mb-6">
+                          <div className="p-3 xs:p-8 bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-100 rounded-2xl border border-blue-200 shadow-lg">
+                            <div className="flex items-center justify-between mb-3 xs:mb-6">
                               <div className="flex items-center">
-                                <ShieldCheckIcon className="h-6 w-6 text-blue-600 mr-4" />
-                                <h4 className="text-xl font-bold text-slate-900">
+                                <ShieldCheckIcon className="h-4 xs:h-6 w-4 xs:w-6 text-blue-600 mr-2 xs:mr-4" />
+                                <h4 className="text-sm xs:text-xl font-bold text-slate-900">
                                   Trust Signals
                                 </h4>
                               </div>
-                              <div className="text-3xl font-bold text-blue-600">
+                              <div className="text-lg xs:text-3xl font-bold text-blue-600">
                                 {
                                   auditReport.conversionOptimization
                                     .trustSignals.score
                                 }
-                                <span className="text-lg text-blue-300">
+                                <span className="text-xs xs:text-lg text-blue-300">
                                   /100
                                 </span>
                               </div>
                             </div>
 
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 xs:space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 xs:gap-4">
                                 {auditReport.conversionOptimization.trustSignals
                                   .present && (
-                                  <div className="p-3">
-                                    <span className="font-semibold text-slate-900 text-sm block mb-2">
+                                  <div className="p-2 xs:p-3">
+                                    <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1 xs:mb-2">
                                       Present Signals
                                     </span>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1 xs:space-y-2">
                                       {auditReport.conversionOptimization.trustSignals.present.map(
                                         (signal, index) => (
                                           <div
                                             key={index}
-                                            className="flex items-center space-x-2"
+                                            className="flex items-center space-x-1 xs:space-x-2"
                                           >
-                                            <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                                            <span className="text-slate-700 text-sm">
+                                            <CheckCircleIcon className="h-3 xs:h-4 w-3 xs:w-4 text-green-500" />
+                                            <span className="text-slate-700 text-[10px] xs:text-sm">
                                               {signal}
                                             </span>
                                           </div>
@@ -1631,19 +1632,19 @@ const UXAudit = () => {
 
                                 {auditReport.conversionOptimization.trustSignals
                                   .missing && (
-                                  <div className="p-3">
-                                    <span className="font-semibold text-slate-900 text-sm block mb-2">
+                                  <div className="p-2 xs:p-3">
+                                    <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1 xs:mb-2">
                                       Missing Signals
                                     </span>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1 xs:space-y-2">
                                       {auditReport.conversionOptimization.trustSignals.missing.map(
                                         (signal, index) => (
                                           <div
                                             key={index}
-                                            className="flex items-center space-x-2"
+                                            className="flex items-center space-x-1 xs:space-x-2"
                                           >
-                                            <XMarkIcon className="h-4 w-4 text-red-500" />
-                                            <span className="text-slate-700 text-sm">
+                                            <XMarkIcon className="h-3 xs:h-4 w-3 xs:w-4 text-red-500" />
+                                            <span className="text-slate-700 text-[10px] xs:text-sm">
                                               {signal}
                                             </span>
                                           </div>
@@ -1656,11 +1657,11 @@ const UXAudit = () => {
 
                               {auditReport.conversionOptimization.trustSignals
                                 .improvements && (
-                                <div className="p-3">
-                                  <span className="font-semibold text-slate-900 text-sm block mb-1">
+                                <div className="p-2 xs:p-3">
+                                  <span className="font-semibold text-slate-900 text-[10px] xs:text-sm block mb-1">
                                     Improvements
                                   </span>
-                                  <p className="text-slate-700 text-sm">
+                                  <p className="text-slate-700 text-[10px] xs:text-sm">
                                     {
                                       auditReport.conversionOptimization
                                         .trustSignals.improvements
@@ -1680,25 +1681,25 @@ const UXAudit = () => {
                 {activeTab === "recommendations" && (
                   <div className="space-y-4">
                     {/* Critical Issues and Implementation Roadmap Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-6">
                       {/* Critical Issues */}
                       {auditReport?.criticalIssues &&
                         auditReport.criticalIssues.length > 0 && (
-                          <div className="bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-6 border border-red-200/50 shadow-lg">
-                            <div className="flex items-center justify-between mb-6">
-                              <div className="flex items-center space-x-3">
-                                <div className="p-2 rounded-lg">
-                                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                          <div className="bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-3 xs:p-6 border border-red-200/50 shadow-lg">
+                            <div className="flex items-center justify-between mb-3 xs:mb-6">
+                              <div className="flex items-center space-x-2 xs:space-x-3">
+                                <div className="p-1.5 xs:p-2 rounded-lg">
+                                  <ExclamationTriangleIcon className="h-4 xs:h-5 w-4 xs:w-5 text-red-600" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900">
+                                <h3 className="text-sm xs:text-lg font-bold text-slate-900">
                                   Critical Issues
                                 </h3>
                               </div>
                               <div className="text-right">
-                                <span className="text-2xl font-bold text-red-600">
+                                <span className="text-lg xs:text-2xl font-bold text-red-600">
                                   {auditReport.criticalIssues.length}
                                 </span>
-                                <span className="text-sm text-red-300 font-medium">
+                                <span className="text-[10px] xs:text-sm text-red-300 font-medium">
                                   {auditReport.criticalIssues.length === 1
                                     ? " issue"
                                     : " issues"}
@@ -1710,15 +1711,15 @@ const UXAudit = () => {
                                 (issue, index) => (
                                   <div
                                     key={index}
-                                    className="bg-white/70 rounded-xl p-4 border border-red-200/50"
+                                    className="bg-white/70 rounded-xl p-2 xs:p-4 border border-red-200/50"
                                   >
-                                    <div className="flex items-start justify-between mb-3">
-                                      <h4 className="text-base font-semibold text-slate-900 flex-1">
+                                    <div className="flex items-start justify-between mb-2 xs:mb-3">
+                                      <h4 className="text-xs xs:text-base font-semibold text-slate-900 flex-1">
                                         {issue.title}
                                       </h4>
-                                      <div className="flex gap-2 ml-3">
+                                      <div className="flex gap-1 xs:gap-2 ml-2 xs:ml-3">
                                         <span
-                                          className={`px-2 py-1 rounded-md text-xs font-medium ${getSeverityColor(
+                                          className={`px-1.5 xs:px-2 py-0.5 xs:py-1 rounded-md text-[10px] xs:text-xs font-medium ${getSeverityColor(
                                             issue.severity
                                           )}`}
                                         >
@@ -1726,37 +1727,37 @@ const UXAudit = () => {
                                         </span>
                                       </div>
                                     </div>
-                                    <p className="text-slate-700 text-sm mb-3">
+                                    <p className="text-slate-700 text-[10px] xs:text-sm mb-2 xs:mb-3">
                                       {issue.description}
                                     </p>
 
                                     {issue.businessImpact && (
-                                      <div className="mb-3 p-3 bg-white/80 rounded-lg border border-red-100">
-                                        <span className="font-medium text-slate-900 text-xs block mb-1">
+                                      <div className="mb-2 xs:mb-3 p-2 xs:p-3 bg-white/80 rounded-lg border border-red-100">
+                                        <span className="font-medium text-slate-900 text-[10px] xs:text-xs block mb-1">
                                           Business Impact:
                                         </span>
-                                        <p className="text-slate-700 text-xs">
+                                        <p className="text-slate-700 text-[10px] xs:text-xs">
                                           {issue.businessImpact}
                                         </p>
                                       </div>
                                     )}
 
                                     {issue.implementation && (
-                                      <div className="bg-white/80 p-3 rounded-lg border border-red-100">
-                                        <div className="grid grid-cols-2 gap-3 mb-2">
+                                      <div className="bg-white/80 p-2 xs:p-3 rounded-lg border border-red-100">
+                                        <div className="grid grid-cols-2 gap-2 xs:gap-3 mb-1 xs:mb-2">
                                           <div>
-                                            <span className="text-xs font-medium text-slate-900 block">
+                                            <span className="text-[10px] xs:text-xs font-medium text-slate-900 block">
                                               Effort:
                                             </span>
-                                            <p className="text-slate-700 text-xs">
+                                            <p className="text-slate-700 text-[10px] xs:text-xs">
                                               {issue.implementation.effort}
                                             </p>
                                           </div>
                                           <div>
-                                            <span className="text-xs font-medium text-slate-900 block">
+                                            <span className="text-[10px] xs:text-xs font-medium text-slate-900 block">
                                               Priority:
                                             </span>
-                                            <p className="text-slate-700 text-xs">
+                                            <p className="text-slate-700 text-[10px] xs:text-xs">
                                               {issue.implementation.priority}
                                             </p>
                                           </div>

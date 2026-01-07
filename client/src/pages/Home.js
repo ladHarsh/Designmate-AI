@@ -127,13 +127,13 @@ const Home = () => {
 
               <h1
                 id="hero-heading"
-                className="text-3xl xs:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 xs:mb-6 tracking-tight px-2"
+                className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 xs:mb-4 tracking-tight px-2"
               >
                 Design Smarter with{" "}
                 <span className="gradient-text">AI Assistance</span>
               </h1>
 
-              <p className="text-base xs:text-lg md:text-xl text-gray-600 mb-6 xs:mb-10 max-w-3xl mx-auto leading-relaxed px-3">
+              <p className="text-sm xs:text-base md:text-lg lg:text-xl text-gray-600 mb-5 xs:mb-8 max-w-3xl mx-auto leading-relaxed px-3">
                 Transform your design workflow with intelligent AI tools that
                 generate layouts, suggest color palettes, recommend fonts, and
                 audit your designs for optimal user experience.
@@ -192,12 +192,12 @@ const Home = () => {
 
       {/* Features Section */}
       <section
-        className="py-12 xs:py-16 lg:py-24 bg-white"
+        className="py-8 xs:py-12 md:py-16 lg:py-24 bg-white"
         aria-labelledby="features-heading"
       >
         <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="text-center mb-8 xs:mb-12 lg:mb-16"
+            className="text-center mb-6 xs:mb-8 md:mb-12 lg:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -208,18 +208,18 @@ const Home = () => {
             </span>
             <h2
               id="features-heading"
-              className="text-2xl xs:text-3xl md:text-4xl font-bold text-gray-900 mb-3 xs:mb-4 px-2"
+              className="text-xl xs:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 xs:mb-3 px-2"
             >
               Everything you need to design better
             </h2>
-            <p className="text-sm xs:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-3">
+            <p className="text-xs xs:text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-3">
               Our AI-powered tools help you create professional designs faster
               and more efficiently.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-6 lg:gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-4 md:gap-6 lg:gap-8"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -229,17 +229,17 @@ const Home = () => {
               <motion.div
                 key={feature.name}
                 variants={itemVariants}
-                className="card p-4 xs:p-6"
+                className="card p-1.5 xs:p-3 md:p-4 lg:p-5"
               >
                 <div
-                  className={`h-10 w-10 xs:h-12 xs:w-12 rounded-xl flex items-center justify-center mb-3 xs:mb-4 ${feature.color}`}
+                  className={`hidden xs:flex h-12 w-12 rounded-xl items-center justify-center mb-2 xs:mb-3 ${feature.color}`}
                 >
-                  <feature.icon className="h-5 w-5 xs:h-6 xs:w-6" />
+                  <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg xs:text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-base xs:text-lg md:text-xl font-semibold text-gray-900 mb-1 xs:mb-2">
                   {feature.name}
                 </h3>
-                <p className="text-sm xs:text-base text-gray-600 mb-3 xs:mb-4 leading-relaxed">
+                <p className="text-xs xs:text-sm md:text-base text-gray-600 mb-1 xs:mb-2 leading-snug xs:leading-relaxed">
                   {feature.description}
                 </p>
                 <Link
@@ -257,8 +257,8 @@ const Home = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 xs:py-20 lg:py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -266,10 +266,10 @@ const Home = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-xl xs:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 xs:mb-4 px-2">
                 Why designers choose DesignMate AI
               </h2>
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-sm xs:text-base md:text-lg text-gray-600 mb-4 xs:mb-6 px-2">
                 Join thousands of designers who have transformed their workflow
                 with our AI-powered tools.
               </p>
@@ -298,7 +298,7 @@ const Home = () => {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="relative"
+              className="relative hidden lg:block"
             >
               <div className="card p-8">
                 <div className="space-y-6">
@@ -339,18 +339,18 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-primary-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-16 xs:py-20 lg:py-24 bg-primary-600">
+        <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-xl xs:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 xs:mb-3 px-2">
               Ready to transform your design workflow?
             </h2>
-            <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-sm xs:text-base md:text-lg lg:text-xl text-primary-100 mb-5 xs:mb-6 max-w-2xl mx-auto px-2">
               Join thousands of designers who are already using AI to create
               better designs faster.
             </p>
@@ -358,20 +358,20 @@ const Home = () => {
             {user ? (
               <Link
                 to="/dashboard"
-                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg"
+                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg text-sm xs:text-base px-6 xs:px-8 py-3 xs:py-4"
                 aria-label="Continue to your dashboard"
               >
                 Continue to Dashboard
-                <ArrowRightIcon className="ml-2 h-5 w-5" />
+                <ArrowRightIcon className="ml-2 h-4 w-4 xs:h-5 xs:w-5" />
               </Link>
             ) : (
               <Link
                 to="/register"
-                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg"
+                className="btn-lg bg-white text-primary-600 hover:bg-gray-50 inline-flex items-center justify-center shadow-lg text-sm xs:text-base px-6 xs:px-8 py-3 xs:py-4"
                 aria-label="Sign up for an account"
               >
                 Get Started Free
-                <ArrowRightIcon className="ml-2 h-5 w-5" />
+                <ArrowRightIcon className="ml-2 h-4 w-4 xs:h-5 xs:w-5" />
               </Link>
             )}
           </motion.div>
@@ -379,18 +379,18 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-gray-900 text-gray-400 py-8 xs:py-12">
+        <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 xs:gap-8">
             {/* Brand */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center mb-4">
-                <SparklesIcon className="h-8 w-8 text-primary-500" />
-                <span className="ml-2 text-xl font-bold text-white">
+            <div className="col-span-2 md:col-span-2">
+              <div className="flex items-center mb-3 xs:mb-4">
+                <SparklesIcon className="h-6 w-6 xs:h-8 xs:w-8 text-primary-500" />
+                <span className="ml-2 text-lg xs:text-xl font-bold text-white">
                   DesignMate AI
                 </span>
               </div>
-              <p className="text-gray-400 max-w-md">
+              <p className="text-sm xs:text-base text-gray-400 max-w-md">
                 AI-powered design assistant helping designers create better user
                 experiences faster.
               </p>
@@ -398,8 +398,10 @@ const Home = () => {
 
             {/* Quick Links */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Features</h4>
-              <ul className="space-y-2">
+              <h4 className="text-white font-semibold mb-2 xs:mb-4 text-sm xs:text-base">
+                Features
+              </h4>
+              <ul className="space-y-1.5 xs:space-y-2 text-sm xs:text-base">
                 <li>
                   <Link
                     to="/layout-generator"
@@ -437,8 +439,10 @@ const Home = () => {
 
             {/* More Links */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Account</h4>
-              <ul className="space-y-2">
+              <h4 className="text-white font-semibold mb-2 xs:mb-4 text-sm xs:text-base">
+                Account
+              </h4>
+              <ul className="space-y-1.5 xs:space-y-2 text-sm xs:text-base">
                 <li>
                   <Link
                     to="/trends"
@@ -467,12 +471,12 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm">
+          <div className="border-t border-gray-800 mt-8 xs:mt-12 pt-6 xs:pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-xs xs:text-sm">
               &copy; {new Date().getFullYear()} DesignMate AI. All rights
               reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
+            <div className="hidden md:flex space-x-6 mt-4 md:mt-0">
               <span className="text-sm">Made with ❤️ for designers</span>
             </div>
           </div>

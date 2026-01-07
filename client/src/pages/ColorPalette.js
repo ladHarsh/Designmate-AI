@@ -703,6 +703,53 @@ const ColorPalette = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const CopyHexButton = ({ colorData }) => {
+    const [copied, setCopied] = useState(false);
+    const hex = colorData.hex;
+    const handleCopy = (e) => {
+      e.stopPropagation();
+      copyColorFormat(colorData, "hex");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    };
+
+    return (
+      <button
+        onClick={handleCopy}
+        className="w-8 h-8 xs:w-auto xs:h-auto flex items-center justify-center xs:justify-start text-[7px] xs:text-[8px] px-0.5 py-0.5 xs:px-1.5 xs:py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
+        title={`Copy ${hex}`}
+      >
+        <ClipboardDocumentIcon className="h-4 w-4 xs:hidden text-gray-600" />
+        <span className="hidden xs:inline-block truncate">
+          {copied ? "Copied" : hex}
+        </span>
+      </button>
+    );
+  };
+
+  const CopyGradientButton = ({ text }) => {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    };
+
+    return (
+      <button
+        onClick={handleCopy}
+        className="w-8 h-8 xs:w-full xs:h-auto flex items-center justify-center xs:justify-start text-[7px] xs:text-[8px] mt-1 text-gray-500 font-mono break-all px-0.5 py-0.5 xs:px-1.5 xs:py-1 bg-gray-100 rounded hover:bg-gray-200"
+        title={"Copy gradient"}
+      >
+        <ClipboardDocumentIcon className="h-4 w-4 xs:hidden text-gray-600" />
+        <span className="hidden xs:inline-block">
+          {copied ? "Copied" : text}
+        </span>
+      </button>
+    );
+  };
+
   const ColorSwatch = ({ colorData, onClick, showDetails = false }) => {
     const color = typeof colorData === "string" ? colorData : colorData.hex;
     const name = typeof colorData === "string" ? null : colorData.name;
@@ -738,12 +785,12 @@ const ColorPalette = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-3 xs:py-6 text-xs xs:text-sm">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="hidden xs:block text-center mb-12"
         >
           <div className="flex items-center justify-center mb-4">
             <SwatchIcon className="h-8 w-8 text-purple-600 mr-3" />
@@ -758,22 +805,24 @@ const ColorPalette = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 xs:gap-8">
           {/* Form Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
+            className={`lg:col-span-1 ${
+              generatedPalettes.length > 0 ? "hidden lg:block" : ""
+            }`}
           >
-            <div className="bg-white rounded-2xl shadow-xl p-8 sticky top-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            <div className="bg-white rounded-2xl shadow-xl p-3 xs:p-6 sticky top-8">
+              <h2 className="text-lg xs:text-2xl font-bold text-gray-900 mb-3 xs:mb-6">
                 Palette Generator
               </h2>
 
-              <form className="space-y-6">
+              <form className="space-y-3 xs:space-y-5">
                 {/* Keywords Input - Required */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  <label className="block text-xs xs:text-sm font-semibold text-gray-900 mb-2 xs:mb-3">
                     Keywords <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -785,7 +834,7 @@ const ColorPalette = () => {
                       setFormData((prev) => ({ ...prev, keywords: value }));
                     }}
                     placeholder="e.g., ocean, sunset, corporate, vibrant"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-900"
+                    className="w-full px-3 xs:px-4 py-2 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-900 text-xs xs:text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-2">
                     Describe your palette vision
@@ -794,10 +843,10 @@ const ColorPalette = () => {
 
                 {/* Mood - Chip Grid (3 columns) */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  <label className="block text-xs xs:text-sm font-semibold text-gray-900 mb-2 xs:mb-3">
                     Desired Style <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 xs:gap-3">
                     {moods.map((mood) => (
                       <motion.button
                         key={mood}
@@ -806,7 +855,7 @@ const ColorPalette = () => {
                           setFormData((prev) => ({ ...prev, mood }))
                         }
                         whileTap={{ scale: 0.95 }}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all border-2 ${
+                        className={`py-1.5 xs:py-2 px-2 xs:px-4 rounded-lg text-xs xs:text-sm font-medium transition-all border-2 ${
                           formData.mood === mood
                             ? "bg-purple-600 text-white border-purple-600"
                             : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
@@ -822,7 +871,7 @@ const ColorPalette = () => {
                 <motion.button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors mt-2"
+                  className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-xs xs:text-sm transition-colors mt-2"
                   whileTap={{ scale: 0.98 }}
                 >
                   <ChevronDownIcon
@@ -841,7 +890,7 @@ const ColorPalette = () => {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-5 overflow-hidden bg-gray-50 p-5 rounded-lg border border-gray-200"
+                      className="space-y-4 xs:space-y-5 overflow-hidden bg-gray-50 p-3 xs:p-5 rounded-lg border border-gray-200"
                     >
                       {/* Industry */}
                       <div>
@@ -865,10 +914,10 @@ const ColorPalette = () => {
 
                       {/* Color Count - Visual Selector */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-2">
                           Number of Colors
                         </label>
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-3 xs:grid-cols-5 gap-1.5 xs:gap-2">
                           {[3, 4, 5, 6, 8].map((count) => (
                             <button
                               key={count}
@@ -879,7 +928,7 @@ const ColorPalette = () => {
                                   colorCount: count,
                                 }))
                               }
-                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                              className={`px-1.5 py-0.5 xs:py-2 rounded-md xs:rounded-lg text-xs font-medium transition-all ${
                                 formData.colorCount === count
                                   ? "bg-purple-600 text-white"
                                   : "bg-white border border-gray-300 text-gray-700 hover:border-purple-400"
@@ -893,17 +942,20 @@ const ColorPalette = () => {
 
                       {/* Base Color */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                        <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-2 xs:mb-3">
                           Primary Color
                         </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            name="baseColor"
-                            value={formData.baseColor}
-                            onChange={handleInputChange}
-                            className="h-12 w-12 rounded-lg border-2 border-gray-300 cursor-pointer flex-shrink-0"
-                          />
+                        <div className="flex items-center gap-2 xs:gap-3">
+                          <div className="h-10 w-10 xs:h-12 xs:w-12 rounded-md xs:rounded-lg border border-gray-300 overflow-hidden flex-shrink-0">
+                            <input
+                              type="color"
+                              name="baseColor"
+                              value={formData.baseColor}
+                              onChange={handleInputChange}
+                              className="h-full w-full cursor-pointer"
+                              style={{ border: "none", padding: 0 }}
+                            />
+                          </div>
                           <input
                             type="text"
                             value={formData.baseColor}
@@ -916,7 +968,7 @@ const ColorPalette = () => {
                                 }));
                               }
                             }}
-                            className="w-32 px-4 py-3 border-2 border-gray-300 rounded-lg bg-white text-sm font-mono text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-600 transition-all"
+                            className="w-24 xs:w-32 px-2 xs:px-4 py-1.5 xs:py-3 border-2 border-gray-300 rounded-md xs:rounded-lg bg-white text-xs xs:text-sm font-mono text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-600 transition-all"
                           />
                         </div>
                       </div>
@@ -930,14 +982,14 @@ const ColorPalette = () => {
                   onClick={generatePalette}
                   disabled={isGenerating || !formData.keywords}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-5 px-6 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex flex-col items-center justify-center gap-2 mt-8 shadow-lg hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2.5 xs:py-4 px-3 xs:px-6 rounded-xl text-sm xs:text-base font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 mt-3 xs:mt-6 shadow-lg hover:shadow-xl"
                 >
                   <div className="flex items-center gap-2">
-                    <SwatchIcon className="h-5 w-5" />
+                    <SwatchIcon className="h-4 w-4 xs:h-5 xs:w-5" />
                     <span>Generate Palette</span>
                   </div>
                   {isGenerating && (
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    <ArrowPathIcon className="h-4 w-4 animate-spin ml-2" />
                   )}
                 </motion.button>
 
@@ -957,7 +1009,7 @@ const ColorPalette = () => {
             className="lg:col-span-2"
           >
             {generatedPalettes.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+              <div className="hidden xs:block bg-white xs:rounded-2xl xs:shadow-xl p-3 xs:p-10 text-center">
                 <SwatchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No Palettes Generated Yet
@@ -980,7 +1032,7 @@ const ColorPalette = () => {
             ) : (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-lg xs:text-2xl font-bold text-gray-900">
                     Generated Palettes ({generatedPalettes.length})
                   </h2>
                   <button
@@ -992,7 +1044,7 @@ const ColorPalette = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 gap-4 xs:gap-6">
                   {generatedPalettes.map((palette) => (
                     <motion.div
                       key={palette.id}
@@ -1000,13 +1052,13 @@ const ColorPalette = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200"
                     >
-                      <div className="p-6">
+                      <div className="p-4 xs:p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                            <h3 className="text-lg xs:text-xl font-semibold text-gray-900 mb-1">
                               {palette.name}
                             </h3>
-                            <p className="text-gray-600 text-sm">
+                            <p className="hidden xs:block text-gray-600 text-sm">
                               {palette.description}
                             </p>
                           </div>
@@ -1018,10 +1070,10 @@ const ColorPalette = () => {
                         {/* Enhanced Color Swatches */}
                         <div className="mb-6">
                           <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-gray-700">
+                            <p className="text-xs xs:text-sm font-medium text-gray-700">
                               Colors ({palette.colors.length}):
                             </p>
-                            <div className="flex items-center space-x-2">
+                            <div className="hidden xs:flex items-center space-x-2">
                               <button
                                 onClick={() =>
                                   navigator.clipboard.writeText(
@@ -1039,45 +1091,37 @@ const ColorPalette = () => {
                             </div>
                           </div>
 
-                          {/* One color per row: left swatch, right details */}
-                          <div className="space-y-4 mb-4">
+                          {/* Color cards: 2-per-row on small screens, single column from xs breakpoint */}
+                          <div className="grid grid-cols-2 xs:grid-cols-1 gap-4 mb-4">
                             {palette.colors.map((colorData, index) => (
                               <div
                                 key={index}
-                                className="flex items-center gap-4 p-4 bg-white border rounded-lg"
+                                className="flex flex-col xs:flex-row items-center gap-4 p-4 bg-white border rounded-lg"
                               >
                                 <div
-                                  className="w-20 h-20 rounded-lg shadow-sm border"
+                                  className="w-full xs:w-20 h-20 rounded-lg shadow-sm border flex-shrink-0"
                                   style={{ backgroundColor: colorData.hex }}
                                 />
-                                <div className="flex-1">
-                                  <div className="flex items-start justify-between">
+                                <div className="flex-1 w-full">
+                                  <div className="flex items-center justify-between w-full">
                                     <div>
-                                      <p className="text-base font-semibold text-gray-900">
+                                      <p className="text-sm xs:text-base font-semibold text-gray-900">
                                         {colorData.name}
                                       </p>
-                                      <p className="text-xs text-gray-500 max-w-2xl">
+                                      <p className="hidden xs:block text-xs text-gray-500 max-w-2xl">
                                         {colorData.usage}
                                       </p>
                                     </div>
                                     {/* contrast badges hidden as requested */}
                                   </div>
-                                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <button
-                                      onClick={() =>
-                                        copyColorFormat(colorData, "hex")
-                                      }
-                                      className="text-[11px] px-2 py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
-                                      title="Copy HEX"
-                                    >
-                                      {colorData.hex}
-                                    </button>
+                                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <CopyHexButton colorData={colorData} />
                                     {colorData.rgb && (
                                       <button
                                         onClick={() =>
                                           copyColorFormat(colorData, "rgb")
                                         }
-                                        className="text-[11px] px-2 py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
+                                        className="hidden xs:inline-block text-xs px-2 py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
                                         title="Copy RGB"
                                       >{`rgb(${colorData.rgb.r}, ${colorData.rgb.g}, ${colorData.rgb.b})`}</button>
                                     )}
@@ -1086,7 +1130,7 @@ const ColorPalette = () => {
                                         onClick={() =>
                                           copyColorFormat(colorData, "hsl")
                                         }
-                                        className="text-[11px] px-2 py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
+                                        className="hidden xs:inline-block text-xs px-2 py-1 bg-gray-100 rounded font-mono hover:bg-gray-200"
                                         title="Copy HSL"
                                       >{`hsl(${colorData.hsl.h}, ${colorData.hsl.s}%, ${colorData.hsl.l}%)`}</button>
                                     )}
@@ -1102,11 +1146,11 @@ const ColorPalette = () => {
                         {/* Enhanced Gradients */}
                         <div className="mb-6">
                           <div className="flex items-center justify-between mb-3">
-                            <p className="text-sm font-medium text-gray-700">
+                            <p className="text-xs xs:text-sm font-medium text-gray-700">
                               Gradients:
                             </p>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                             {Object.entries(palette.gradients).map(
                               ([type, gradientData]) => (
                                 <div
@@ -1120,9 +1164,9 @@ const ColorPalette = () => {
                                     className="w-full h-16 rounded-md"
                                     style={{ background: gradientData.linear }}
                                   />
-                                  <p className="text-[10px] text-gray-500 mt-2 font-mono break-all">
-                                    {gradientData.linear}
-                                  </p>
+                                  <CopyGradientButton
+                                    text={gradientData.linear}
+                                  />
                                 </div>
                               )
                             )}
@@ -1131,8 +1175,8 @@ const ColorPalette = () => {
 
                         {/* Accessibility Preview (no hardcoded metrics, no green background) */}
                         <div className="mb-6">
-                          <div className="rounded-lg p-4">
-                            <h4 className="text-sm font-medium text-gray-800 mb-3 flex items-center">
+                          <div className="rounded-lg">
+                            <h4 className="text-xs xs:text-sm font-medium text-gray-800 mb-3 flex items-center">
                               <EyeIcon className="h-4 w-4 mr-1" />
                               UI Preview
                             </h4>
@@ -1191,22 +1235,19 @@ const ColorPalette = () => {
                                   }}
                                 >
                                   <p
-                                    className="text-base font-semibold leading-6"
+                                    className="text-sm xs:text-base font-semibold leading-6"
                                     style={{ color: textOnDark }}
                                   >
                                     {titleText}
                                   </p>
-                                  <p
-                                    className="text-sm opacity-90 mt-1"
-                                    style={{ color: textOnDark }}
-                                  >
+                                  <p className="text-xs xs:text-sm opacity-90 mt-1">
                                     {bodyText}
                                   </p>
                                   <div className="mt-3 flex flex-wrap items-center gap-2">
                                     {chipColors.map((c, i) => (
                                       <span
                                         key={`chip-${i}`}
-                                        className="px-3 py-1 rounded-full text-sm font-semibold"
+                                        className="px-3 py-1 rounded-full text-xs xs:text-sm font-semibold"
                                         style={{
                                           backgroundColor: c.hex,
                                           color: chipText(c.hex),
@@ -1238,12 +1279,8 @@ const ColorPalette = () => {
 
                         {/* Raw API Response hidden per requirements */}
 
-                        {/* Actions */}
-                        <div className="flex items-center justify-end pt-4 border-t border-gray-100">
-                          <button className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
-                            Use Palette
-                          </button>
-                        </div>
+                        {/* Actions (removed 'Use Palette' per request) */}
+                        <div className="pt-4 border-t border-gray-100" />
                       </div>
                     </motion.div>
                   ))}

@@ -64,17 +64,17 @@ const Dashboard = () => {
     <Link to={tool.href}>
       <motion.div
         whileHover={{ y: -4 }}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 xs:p-6 hover:shadow-md transition-all duration-200 h-full"
+        className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 xs:p-6 hover:shadow-md transition-all duration-200 h-full"
       >
         <div
-          className={`p-2 xs:p-3 rounded-xl ${tool.color} w-fit mb-3 xs:mb-4`}
+          className={`hidden xs:inline-flex items-center justify-center p-2 xs:p-3 rounded-xl ${tool.color} w-fit mb-3 xs:mb-4`}
         >
           <tool.icon className="h-5 w-5 xs:h-6 xs:w-6" />
         </div>
-        <h3 className="text-base xs:text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="text-sm xs:text-base md:text-lg font-semibold text-gray-900 mb-2">
           {tool.title}
         </h3>
-        <p className="text-gray-600 text-xs xs:text-sm mb-3 xs:mb-4">
+        <p className="text-gray-600 text-xs xs:text-sm md:text-base mb-3 xs:mb-4 leading-snug">
           {tool.description}
         </p>
         <div className="flex items-center text-primary-600 font-medium text-xs xs:text-sm">
@@ -86,7 +86,7 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 xs:py-8">
+    <div className="min-h-screen bg-gray-50 py-3 xs:py-8">
       <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -94,7 +94,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 xs:mb-8"
         >
-          <h1 className="text-2xl xs:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl xs:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
             Welcome, {user?.firstName || "Designer"}! 👋
           </h1>
           <p className="text-sm xs:text-base text-gray-600">
@@ -108,10 +108,10 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="text-lg xs:text-xl font-semibold text-gray-900 mb-4 xs:mb-6">
+          <h2 className="text-base xs:text-lg md:text-xl font-semibold text-gray-900 mb-4 xs:mb-6">
             AI Design Tools
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 xs:gap-6">
             {tools.map((tool, index) => (
               <motion.div
                 key={tool.title}
@@ -130,7 +130,7 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-6 xs:mt-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-4 xs:p-6 text-white"
+          className="hidden xs:block mt-6 xs:mt-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-4 xs:p-6 text-white"
         >
           <h3 className="text-base xs:text-lg font-semibold mb-2">
             💡 Quick Tip

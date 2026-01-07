@@ -128,11 +128,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen overflow-auto bg-gradient-to-br from-purple-50 to-blue-50 flex items-start xs:items-center justify-center py-4 xs:py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full space-y-8"
+        className="max-w-md w-full space-y-2 xs:space-y-8 my-auto"
       >
         {/* Header */}
         <div className="text-center">
@@ -140,14 +140,14 @@ const Register = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl flex items-center justify-center"
+            className="hidden xs:flex mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl items-center justify-center"
           >
             <span className="text-white text-xl font-bold">D</span>
           </motion.div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <h2 className="mt-0 xs:mt-6 text-xl xs:text-2xl md:text-3xl font-bold text-gray-900">
             Create your account
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-1 xs:mt-2 text-xs xs:text-sm text-gray-600">
             Join DesignMate AI and start creating amazing designs
           </p>
         </div>
@@ -157,21 +157,21 @@ const Register = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="mt-8 space-y-6"
+          className="mt-2 xs:mt-8 space-y-3 xs:space-y-6"
           onSubmit={handleSubmit}
         >
-          <div className="space-y-4">
+          <div className="space-y-2.5 xs:space-y-4">
             {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
               <div>
                 <label
                   htmlFor="firstName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-xs xs:text-sm font-medium text-gray-700 mb-2"
                 >
                   First name
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
                     <UserIcon className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -182,7 +182,7 @@ const Register = () => {
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-3 xs:pl-10 pr-3 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm xs:text-base"
                     placeholder="First name"
                   />
                 </div>
@@ -190,12 +190,12 @@ const Register = () => {
               <div>
                 <label
                   htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-xs xs:text-sm font-medium text-gray-700 mb-2"
                 >
                   Last name
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
                     <UserIcon className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -206,7 +206,7 @@ const Register = () => {
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-3 xs:pl-10 pr-3 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm xs:text-base"
                     placeholder="Last name"
                   />
                 </div>
@@ -217,12 +217,12 @@ const Register = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-xs xs:text-sm font-medium text-gray-700 mb-2"
               >
                 Email address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
                   <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -233,7 +233,7 @@ const Register = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-3 xs:pl-10 pr-3 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm xs:text-base"
                   placeholder="Enter your email"
                 />
               </div>
@@ -243,12 +243,12 @@ const Register = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-xs xs:text-sm font-medium text-gray-700 mb-2"
               >
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
                   <LockClosedIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -259,7 +259,7 @@ const Register = () => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-3 xs:pl-10 pr-12 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm xs:text-base"
                   placeholder="Create a password"
                 />
                 <button
@@ -285,12 +285,12 @@ const Register = () => {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-xs xs:text-sm font-medium text-gray-700 mb-2"
               >
                 Confirm password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
                   <LockClosedIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -301,7 +301,7 @@ const Register = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
+                  className={`block w-full pl-3 xs:pl-10 pr-12 py-2.5 xs:py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm xs:text-base ${
                     formData.confirmPassword &&
                     formData.password !== formData.confirmPassword
                       ? "border-red-300"
@@ -343,7 +343,7 @@ const Register = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="group relative w-full flex justify-center py-2.5 xs:py-3 px-4 border border-transparent text-sm xs:text-base font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isLoading ? (
               <div className="flex items-center">
@@ -359,7 +359,7 @@ const Register = () => {
           </button>
           {/* Sign In Link */}
           <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-xs xs:text-sm text-gray-600">
               Already have an account?{" "}
               <Link
                 to="/login"

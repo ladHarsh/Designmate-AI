@@ -57,7 +57,7 @@ const Layout = ({ children }) => {
               exit={{ x: "-100%" }}
               className="relative flex w-full max-w-xs flex-1 flex-col bg-white"
             >
-              <div className="flex flex-shrink-0 items-center px-4 xs:px-6 py-3 xs:py-4">
+              <div className="flex flex-shrink-0 items-center px-2 xs:px-6 py-3 xs:py-4">
                 <Link to="/dashboard" className="flex items-center">
                   <div className="h-7 w-7 xs:h-8 xs:w-8 bg-gradient-to-r from-primary-600 to-accent-600 rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-xs xs:text-sm">
@@ -69,14 +69,14 @@ const Layout = ({ children }) => {
                   </span>
                 </Link>
               </div>
-              <nav className="flex-1 space-y-1 px-3 xs:px-4 py-3 xs:py-4 overflow-y-auto">
+              <nav className="flex-1 space-y-1 px-2 xs:px-4 py-2.5 xs:py-4 overflow-y-auto">
                 {navigation.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-2 xs:px-3 py-2 text-xs xs:text-sm font-medium rounded-lg transition-colors ${
+                      className={`group flex items-center px-1.5 xs:px-2.5 py-1.5 xs:py-2 text-xs xs:text-sm font-medium rounded-lg transition-colors ${
                         isActive
                           ? "bg-primary-50 text-primary-700 border-r-2 border-primary-600"
                           : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
@@ -84,7 +84,7 @@ const Layout = ({ children }) => {
                       onClick={() => setSidebarOpen(false)}
                     >
                       <item.icon
-                        className={`mr-2 xs:mr-3 h-4 w-4 xs:h-5 xs:w-5 flex-shrink-0 ${
+                        className={`mr-2 xs:mr-2.5 h-4 w-4 xs:h-5 xs:w-5 flex-shrink-0 ${
                           isActive
                             ? "text-primary-600"
                             : "text-gray-400 group-hover:text-gray-500"
@@ -95,8 +95,8 @@ const Layout = ({ children }) => {
                   );
                 })}
               </nav>
-              <div className="border-t border-gray-200 p-3 xs:p-4">
-                <div className="flex items-center">
+              <div className="border-t border-gray-200 p-2.5 xs:p-4">
+                <div className="flex items-center px-0.5">
                   <div className="h-7 w-7 xs:h-8 xs:w-8 bg-primary-600 rounded-full flex items-center justify-center">
                     <span className="text-white font-medium text-xs xs:text-sm">
                       {user?.name?.split(" ")[0]?.charAt(0)?.toUpperCase() ||
@@ -112,10 +112,10 @@ const Layout = ({ children }) => {
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 xs:mt-4 space-y-1">
+                <div className="mt-3 xs:mt-4 space-y-1 px-0.5">
                   <Link
                     to="/profile"
-                    className="flex items-center px-2 xs:px-3 py-2 text-xs xs:text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="flex items-center px-1.5 xs:px-3 py-1.5 xs:py-2 text-xs xs:text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
                     onClick={() => setSidebarOpen(false)}
                   >
                     <UserIcon className="mr-2 xs:mr-3 h-4 w-4 xs:h-5 xs:w-5 text-gray-400" />
@@ -123,7 +123,7 @@ const Layout = ({ children }) => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex w-full items-center px-2 xs:px-3 py-2 text-xs xs:text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="flex w-full items-center px-1.5 xs:px-3 py-1.5 xs:py-2 text-xs xs:text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
                   >
                     <ArrowRightOnRectangleIcon className="mr-2 xs:mr-3 h-4 w-4 xs:h-5 xs:w-5 text-gray-400" />
                     Sign out
@@ -155,14 +155,14 @@ const Layout = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`group flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? "bg-primary-50 text-primary-700 border-r-2 border-primary-600"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
                   <item.icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                    className={`mr-2.5 h-5 w-5 flex-shrink-0 ${
                       isActive
                         ? "text-primary-600"
                         : "text-gray-400 group-hover:text-gray-500"
@@ -210,7 +210,7 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top navigation */}
-        <div className="sticky top-0 z-40 flex h-14 xs:h-16 shrink-0 items-center gap-x-2 xs:gap-x-4 border-b border-gray-200 bg-white px-2 xs:px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        <div className="sticky top-0 z-40 flex h-14 xs:h-16 shrink-0 items-center gap-x-2 xs:gap-x-4 border-b border-gray-200 bg-white px-1 xs:px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
           <button
             type="button"
             className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
@@ -225,14 +225,14 @@ const Layout = ({ children }) => {
             <div className="flex items-center gap-x-2 xs:gap-x-4 lg:gap-x-6">
               <Link
                 to="/profile"
-                className="text-xs xs:text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="inline-flex items-center justify-center gap-1 px-1 text-xs xs:text-sm font-medium text-gray-700 hover:text-gray-900"
               >
                 <span className="hidden xs:inline">Profile</span>
                 <UserIcon className="h-5 w-5 xs:hidden" />
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-xs xs:text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="inline-flex items-center justify-center gap-1 px-1 text-xs xs:text-sm font-medium text-gray-700 hover:text-gray-900"
               >
                 <span className="hidden xs:inline">Sign Out</span>
                 <ArrowRightOnRectangleIcon className="h-5 w-5 xs:hidden" />
@@ -242,8 +242,8 @@ const Layout = ({ children }) => {
         </div>
 
         {/* Page content */}
-        <main className="py-3 xs:py-4 sm:py-6">
-          <div className="mx-auto max-w-7xl px-2 xs:px-4 sm:px-6 lg:px-8">
+        <main className="py-2 xs:py-4 sm:py-6">
+          <div className="mx-auto max-w-7xl px-1.5 xs:px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

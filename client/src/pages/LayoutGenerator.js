@@ -240,7 +240,7 @@ const LayoutGenerator = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-purple-900/80 via-blue-900/80 to-indigo-900/80"></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="hidden xs:block relative max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-8 xs:py-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -278,24 +278,26 @@ const LayoutGenerator = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-2 xs:px-4 sm:px-6 lg:px-8 py-4 xs:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 xs:gap-8">
           {/* Form Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
+            className={`lg:col-span-1 ${
+              generatedLayouts.length > 0 ? "hidden lg:block" : ""
+            }`}
           >
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8 sticky top-8">
-              <div className="flex items-center mb-6">
-                <div className="p-3 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl mr-4 shadow-lg shadow-purple-200">
-                  <PhotoIcon className="h-7 w-7 text-white" />
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-3 xs:p-6 sticky top-8">
+              <div className="flex items-center mb-4 xs:mb-6">
+                <div className="p-2 xs:p-3 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl mr-2 xs:mr-4 shadow-lg shadow-purple-200">
+                  <PhotoIcon className="h-5 w-5 xs:h-7 xs:w-7 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  <h2 className="text-lg xs:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     Create Your Layout
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs xs:text-sm text-gray-500">
                     Fill in the details below
                   </p>
                 </div>
@@ -305,10 +307,10 @@ const LayoutGenerator = () => {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-start"
+                  className="mb-4 p-3 xs:p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-start"
                 >
                   <svg
-                    className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0"
+                    className="h-4 w-4 xs:h-5 xs:w-5 mr-3 mt-0.5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -318,21 +320,23 @@ const LayoutGenerator = () => {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-sm font-medium">{error}</span>
+                  <span className="text-xs xs:text-sm font-medium">
+                    {error}
+                  </span>
                 </motion.div>
               )}
 
-              <form className="space-y-6">
+              <form className="space-y-5">
                 {/* Purpose */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                     Project Purpose <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="purpose"
                     value={formData.purpose}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 xs:px-4 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-xs xs:text-sm"
                   >
                     <option value="">Select purpose</option>
                     {purposes.map((purpose) => (
@@ -345,14 +349,14 @@ const LayoutGenerator = () => {
 
                 {/* Industry */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                     Industry <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="industry"
                     value={formData.industry}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 xs:px-4 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-xs xs:text-sm"
                   >
                     <option value="">Select industry</option>
                     {industries.map((industry) => (
@@ -365,14 +369,14 @@ const LayoutGenerator = () => {
 
                 {/* Style */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                     Design Style
                   </label>
                   <select
                     name="style"
                     value={formData.style}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 xs:px-4 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-xs xs:text-sm"
                   >
                     <option value="">Select style</option>
                     {styles.map((style) => (
@@ -386,15 +390,15 @@ const LayoutGenerator = () => {
                 {/* Components */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-xs xs:text-sm font-medium text-gray-700">
                       Required Components
                     </label>
                     <button
                       type="button"
                       onClick={handleSelectAllComponents}
-                      className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                      className="flex items-center text-xs xs:text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
                     >
-                      <Squares2X2Icon className="h-3.5 w-3.5 mr-1" />
+                      <Squares2X2Icon className="h-3 w-3 xs:h-3.5 xs:w-3.5 mr-1" />
                       {formData.components.length === componentOptions.length
                         ? "Deselect All"
                         : "Select All"}
@@ -404,28 +408,28 @@ const LayoutGenerator = () => {
                     {componentOptions.map((component) => (
                       <label
                         key={component}
-                        className="flex items-center p-2 rounded hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center p-1.5 xs:p-2 rounded hover:bg-gray-50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={formData.components.includes(component)}
                           onChange={() => handleComponentToggle(component)}
-                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4"
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-3 w-3 xs:h-4 xs:w-4"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
+                        <span className="ml-2 text-xs xs:text-sm text-gray-700">
                           {component}
                         </span>
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-[11px] xs:text-xs text-gray-500 mt-2">
                     {formData.components.length} components selected
                   </p>
                 </div>
 
                 {/* Color Scheme */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                     Color Scheme
                   </label>
                   <input
@@ -434,13 +438,13 @@ const LayoutGenerator = () => {
                     value={formData.colorScheme}
                     onChange={handleInputChange}
                     placeholder="e.g., Blue and white, Warm colors"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 xs:px-4 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs xs:text-sm"
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                     Additional Details
                   </label>
                   <textarea
@@ -449,7 +453,7 @@ const LayoutGenerator = () => {
                     onChange={handleInputChange}
                     rows={4}
                     placeholder="Describe any specific requirements..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 xs:px-4 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs xs:text-sm"
                   />
                 </div>
 
@@ -460,16 +464,16 @@ const LayoutGenerator = () => {
                   disabled={
                     isGenerating || !formData.purpose || !formData.industry
                   }
-                  className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white py-4 px-8 rounded-2xl font-bold text-lg hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white py-3 px-4 xs:py-4 xs:px-8 rounded-2xl font-semibold text-base xs:text-lg hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
                   {isGenerating ? (
                     <>
-                      <ArrowPathIcon className="h-6 w-6 mr-3 animate-spin" />
+                      <ArrowPathIcon className="h-5 w-5 xs:h-6 xs:w-6 mr-3 animate-spin" />
                       Creating Magic...
                     </>
                   ) : (
                     <>
-                      <SparklesIcon className="h-6 w-6 mr-3" />
+                      <SparklesIcon className="h-5 w-5 xs:h-6 xs:w-6 mr-3" />
                       Generate Amazing Layouts
                     </>
                   )}
@@ -482,10 +486,12 @@ const LayoutGenerator = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2"
+            className={`${
+              generatedLayouts.length > 0 ? "lg:col-span-2" : "lg:col-span-2"
+            }`}
           >
             {generatedLayouts.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-12 text-center">
+              <div className="hidden xs:block bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-6 xs:p-12 text-center">
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full blur-3xl opacity-20"></div>
                   <DocumentTextIcon className="relative h-20 w-20 text-purple-600 mx-auto" />
@@ -548,35 +554,6 @@ const LayoutGenerator = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-6">
-                  {/* Raw Gemini Response Panel */}
-                  {rawGeminiResponse && (
-                    <div className="mt-8">
-                      <details className="bg-gray-100 rounded-lg p-4 border border-gray-300">
-                        <summary className="font-semibold cursor-pointer select-none text-blue-700">
-                          View Code
-                        </summary>
-                        <div className="mt-4">
-                          <pre
-                            className="overflow-x-auto whitespace-pre-wrap text-xs max-h-96"
-                            style={{ wordBreak: "break-all" }}
-                          >
-                            {rawGeminiResponse.length > 5000
-                              ? rawGeminiResponse.slice(0, 5000) +
-                                "\n... (truncated, copy to see full)"
-                              : rawGeminiResponse}
-                          </pre>
-                          <button
-                            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(rawGeminiResponse);
-                            }}
-                          >
-                            Copy Full Response
-                          </button>
-                        </div>
-                      </details>
-                    </div>
-                  )}
                   {generatedLayouts.map((layout) => (
                     <motion.div
                       key={layout.id}
@@ -748,9 +725,68 @@ const LayoutGenerator = () => {
                           </div>
                         )}
 
-                        {/* Actions Section */}
-                        <div className="pt-4 border-t border-gray-100">
+                        {/* Actions Section - Responsive */}
+                        {/* Actions Section - Responsive */}
+                        {/* Mobile: Primary CTA (Live Preview) + Secondary CTA (Copy) - Centered in one row */}
+                        <div className="xs:hidden flex justify-center items-stretch gap-2 pt-4 border-t border-gray-100">
+                          {/* Secondary: Copy Code - Equal height button */}
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                layout.htmlCode || rawGeminiResponse
+                              );
+                              alert("Code copied!");
+                            }}
+                            title="Copy code to clipboard"
+                            className="px-4 py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-medium text-sm flex items-center justify-center gap-1.5 transition-all duration-200 whitespace-nowrap shadow hover:shadow-md"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Copy
+                          </button>
+                          {/* Primary: Live Preview - Equal height button */}
                           <LivePreview layout={layout} />
+                        </div>
+                        {/* Desktop: Copy Code + Live Preview - Side by side */}
+                        <div className="hidden xs:flex gap-3 pt-4 border-t border-gray-100">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                layout.htmlCode || rawGeminiResponse
+                              );
+                              alert("Layout code copied to clipboard!");
+                            }}
+                            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-lg"
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Copy Code
+                          </button>
+                          <div className="flex-1">
+                            <LivePreview layout={layout} />
+                          </div>
                         </div>
                       </div>
                     </motion.div>

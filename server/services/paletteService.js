@@ -297,7 +297,13 @@ IMPORTANT: Each color must have a unique hex value. No duplicates allowed.`;
   }
 
   buildFullFormat() {
-    return `REQUIRED JSON STRUCTURE (ALL HEX VALUES MUST BE UNIQUE):
+    return `CRITICAL VALIDATION RULES:
+1. "mood" field MUST be EXACTLY one of: "calm", "energetic", "professional", "playful", "elegant", "bold", "minimal", "warm", "cool"
+2. "industry" field MUST be EXACTLY one of: "technology", "healthcare", "finance", "education", "retail", "food", "travel", "fashion", "entertainment", "other"
+3. "paletteType" field MUST be EXACTLY one of: "monochromatic", "analogous", "complementary", "triadic", "tetradic", "split-complementary", "custom"
+4. Do NOT combine values, add commas, or create custom text for these enum fields.
+
+REQUIRED JSON STRUCTURE (ALL HEX VALUES MUST BE UNIQUE):
 {
   "name": "Educational Energy Palette",
   "description": "Bold, energetic colors designed for educational platforms",
@@ -990,21 +996,107 @@ class ColorPaletteGenerator {
   async generate(options) {
     const {
       prompt = "",
-      mood = "modern",
+      mood = "professional",
       industry = "technology",
       paletteType = "custom",
       model = "gemini-2.0-flash-exp",
       ...additionalOptions
     } = options;
 
+    // Validate and map mood to enum value
+    const validMoods = [
+      "calm",
+      "energetic",
+      "professional",
+      "playful",
+      "elegant",
+      "bold",
+      "minimal",
+      "warm",
+      "cool",
+    ];
+    let validMood = mood.toLowerCase().trim();
+
+    if (!validMoods.includes(validMood)) {
+      const moodMap = {
+        modern: "professional",
+        minimalist: "minimal",
+        vibrant: "energetic",
+        sophisticated: "elegant",
+        refined: "elegant",
+        fun: "playful",
+        serious: "professional",
+        relaxed: "calm",
+        cozy: "warm",
+        fresh: "cool",
+      };
+      validMood = moodMap[validMood] || "professional";
+    }
+
+    // Validate and map industry to enum value
+    const validIndustries = [
+      "technology",
+      "healthcare",
+      "finance",
+      "education",
+      "retail",
+      "food",
+      "travel",
+      "fashion",
+      "entertainment",
+      "other",
+    ];
+    let validIndustry = industry.toLowerCase().trim();
+
+    if (!validIndustries.includes(validIndustry)) {
+      // Map common variations
+      const industryMap = {
+        tech: "technology",
+        software: "technology",
+        ecommerce: "retail",
+        medical: "healthcare",
+        banking: "finance",
+        school: "education",
+        restaurant: "food",
+        tourism: "travel",
+        clothing: "fashion",
+        media: "entertainment",
+      };
+      validIndustry = industryMap[validIndustry] || "other";
+    }
+
+    // Validate and map paletteType to enum value
+    const validTypes = [
+      "monochromatic",
+      "analogous",
+      "complementary",
+      "triadic",
+      "tetradic",
+      "split-complementary",
+      "custom",
+    ];
+    let validPaletteType = paletteType.toLowerCase().trim();
+
+    if (!validTypes.includes(validPaletteType)) {
+      const typeMap = {
+        mono: "monochromatic",
+        adjacent: "analogous",
+        opposite: "complementary",
+        triad: "triadic",
+        quad: "tetradic",
+        split: "split-complementary",
+      };
+      validPaletteType = typeMap[validPaletteType] || "custom";
+    }
+
     let lastError;
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const promptBuilder = new ImprovedPalettePromptBuilder({
           prompt,
-          mood,
-          industry,
-          paletteType,
+          mood: validMood,
+          industry: validIndustry,
+          paletteType: validPaletteType,
           model,
           ...additionalOptions,
         });

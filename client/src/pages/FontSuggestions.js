@@ -362,23 +362,12 @@ const FontSuggestions = () => {
   };
 
   const FontPreview = ({ font, label }) => (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white rounded-lg p-2 xs:p-4 border border-gray-200 flex flex-col h-full">
+      <div className="mb-2">
         <h4 className="text-sm font-medium text-gray-700">{label}</h4>
-        <a
-          href={
-            font.url ||
-            `https://fonts.google.com/specimen/${font.name.replace(" ", "+")}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-purple-600 hover:text-purple-800"
-        >
-          View →
-        </a>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 space-y-3">
         <div
           className="text-2xl font-bold text-gray-900"
           style={{ fontFamily: font.name, fontWeight: 700 }}
@@ -400,25 +389,39 @@ const FontSuggestions = () => {
           {font.category} • {font.weight}
         </div>
       </div>
+
+      <div className="mt-3 text-center">
+        <a
+          href={
+            font.url ||
+            `https://fonts.google.com/specimen/${font.name.replace(" ", "+")}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-purple-600 hover:text-purple-800"
+        >
+          View →
+        </a>
+      </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-2 xs:py-4 text-[12px] xs:text-sm">
         {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="hidden xs:block text-center mb-8"
         >
           <div className="flex items-center justify-center mb-4">
             <DocumentTextIcon className="h-8 w-8 text-purple-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-3xl xs:text-4xl font-bold text-gray-900">
               Font Suggestions
             </h1>
           </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="hidden xs:block text-lg xs:text-xl text-gray-600 max-w-3xl mx-auto">
             Get AI-powered font recommendations for your projects. Choose your
             project type and style to get clean, modern font pairings with
             simple usage guidelines.
@@ -430,24 +433,26 @@ const FontSuggestions = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
+            className={`lg:col-span-1 ${
+              generatedSuggestions.length > 0 ? "hidden lg:block" : ""
+            }`}
           >
-            <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-white rounded-2xl shadow-xl p-2 xs:p-4 sticky top-8">
+              <h2 className="text-lg xs:text-xl font-bold text-gray-900 mb-3 xs:mb-4">
                 Font Generator
               </h2>
 
-              <form className="space-y-5">
+              <form className="space-y-3 xs:space-y-4">
                 {/* Project Type - Required Primary Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-2 xs:mb-3">
                     Project Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="projectType"
                     value={formData.projectType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                    className="w-full px-2 xs:px-3 py-1.5 xs:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900 text-xs xs:text-sm"
                   >
                     <option value="">What are you designing?</option>
                     {projectTypes.slice(0, 6).map((type) => (
@@ -460,10 +465,10 @@ const FontSuggestions = () => {
 
                 {/* Tone - Style Buttons */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-2 xs:mb-3">
                     Desired Style <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 xs:grid-cols-3 gap-1 xs:gap-1.5 justify-items-start xs:justify-items-stretch">
                     {tones.slice(0, 6).map((tone) => (
                       <button
                         key={tone.value}
@@ -474,7 +479,7 @@ const FontSuggestions = () => {
                             tone: tone.value,
                           }))
                         }
-                        className={`px-3 py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                        className={`w-full xs:w-auto px-1 xs:px-2 py-1 xs:py-2 rounded-md xs:rounded-lg text-[11px] xs:text-sm font-medium leading-tight flex items-center justify-center transition-colors whitespace-nowrap max-w-[120px] xs:max-w-full text-center ${
                           formData.tone === tone.value
                             ? "bg-purple-600 text-white"
                             : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"
@@ -488,7 +493,7 @@ const FontSuggestions = () => {
 
                 {/* Preview Text - Optional Secondary Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-xs xs:text-sm font-medium text-gray-700 mb-2 xs:mb-3">
                     Preview Text (Optional)
                   </label>
                   <input
@@ -496,7 +501,7 @@ const FontSuggestions = () => {
                     value={previewText}
                     onChange={(e) => setPreviewText(e.target.value)}
                     placeholder="Enter custom preview text..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    className="w-full px-2 xs:px-3 py-1.5 xs:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-xs xs:text-sm"
                   />
                 </div>
 
@@ -504,7 +509,7 @@ const FontSuggestions = () => {
                 <motion.button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors mt-2"
+                  className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-xs xs:text-sm transition-colors mt-2"
                   whileTap={{ scale: 0.98 }}
                 >
                   <ChevronDownIcon
@@ -523,18 +528,18 @@ const FontSuggestions = () => {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-5 overflow-hidden bg-gray-50 p-5 rounded-lg border border-gray-200"
+                      className="space-y-3 xs:space-y-4 overflow-hidden bg-gray-50 p-2 xs:p-4 rounded-lg border border-gray-200"
                     >
                       {/* Accessibility Level */}
                       <div>
-                        <label className="block text-sm font-medium text-black mb-1">
+                        <label className="block text-xs xs:text-sm font-medium text-black mb-1">
                           Accessibility Standard
                         </label>
                         <select
                           name="accessibilityLevel"
                           value={formData.accessibilityLevel}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm bg-white"
+                          className="w-full px-2 xs:px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-xs xs:text-sm bg-white"
                         >
                           {accessibilityLevels.map((level) => (
                             <option
@@ -558,7 +563,7 @@ const FontSuggestions = () => {
                             onChange={handleInputChange}
                             className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
                           />
-                          <label className="ml-2 text-sm text-black">
+                          <label className="ml-2 text-xs xs:text-sm text-black">
                             Include detailed font pairings
                           </label>
                         </div>
@@ -566,10 +571,10 @@ const FontSuggestions = () => {
 
                       {/* Brand Personality - Compact */}
                       <div>
-                        <label className="block text-sm text-black mb-2">
+                        <label className="block text-xs xs:text-sm text-black mb-2">
                           Brand Personality (Optional)
                         </label>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="grid grid-cols-2 xs:flex xs:flex-wrap gap-1">
                           {brandPersonalities.slice(0, 8).map((personality) => (
                             <button
                               key={personality}
@@ -577,7 +582,7 @@ const FontSuggestions = () => {
                               onClick={() =>
                                 handleBrandPersonalityToggle(personality)
                               }
-                              className={`px-2 py-1 rounded-xl text-xs ${
+                              className={`w-full xs:w-auto px-1.5 xs:px-2 py-1 xs:py-2 rounded-lg xs:rounded-xl text-[10px] xs:text-[11px] leading-tight flex items-center justify-center text-center ${
                                 formData.brandPersonality.includes(personality)
                                   ? "bg-purple-600 text-white border border-purple-600"
                                   : "bg-white text-black border border-gray-300"
@@ -593,23 +598,23 @@ const FontSuggestions = () => {
                 </AnimatePresence>
 
                 {/* Generate Button */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <button
                     type="button"
                     onClick={generateSuggestions}
                     disabled={
                       isGenerating || !formData.projectType || !formData.tone
                     }
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 xs:py-3 px-3 xs:px-5 rounded-xl font-bold text-sm xs:text-base hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {isGenerating ? (
                       <>
-                        <ArrowPathIcon className="h-6 w-6 mr-3 animate-spin" />
+                        <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
                         Creating Perfect Fonts...
                       </>
                     ) : (
                       <>
-                        <DocumentTextIcon className="h-6 w-6 mr-3" />
+                        <DocumentTextIcon className="h-5 w-5 mr-2" />
                         Generate Font Suggestions
                       </>
                     )}
@@ -633,7 +638,7 @@ const FontSuggestions = () => {
             className="lg:col-span-2"
           >
             {generatedSuggestions.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+              <div className="hidden xs:block bg-white rounded-2xl shadow-xl p-12 text-center">
                 <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No Suggestions Generated Yet
@@ -654,7 +659,7 @@ const FontSuggestions = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">
                     Font Suggestions ({generatedSuggestions.length})
@@ -668,7 +673,7 @@ const FontSuggestions = () => {
                   </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {generatedSuggestions.map((suggestion) => (
                     <motion.div
                       key={suggestion.id}
@@ -676,48 +681,50 @@ const FontSuggestions = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200"
                     >
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-6">
-                          <div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                              {suggestion.name}
-                            </h3>
-                            {/* Tags */}
-                            <div className="flex flex-wrap gap-2">
-                              {suggestion.tags.map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium"
+                      <div className="p-4">
+                        <div className="mb-4">
+                          <div className="grid grid-cols-[2fr_1fr] xs:grid-cols-2 items-start gap-3">
+                            <div>
+                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                                {suggestion.name}
+                              </h3>
+                            </div>
+                            <div className="flex items-start justify-end space-x-3">
+                              <div className="flex items-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                <svg
+                                  className="w-4 h-4 mr-1"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
                                 >
-                                  {tag}
-                                </span>
-                              ))}
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {suggestion.score}/10
+                              </div>
+
+                              <div className="flex items-center space-x-1">
+                                {suggestion.accessibility?.contrastRatio && (
+                                  <div className="hidden xs:inline-flex bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                                    {suggestion.accessibility.contrastRatio}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                              <svg
-                                className="w-4 h-4 mr-1"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              {suggestion.score}/100
-                            </div>
 
-                            <div className="flex items-center space-x-1">
-                              {suggestion.accessibility?.contrastRatio && (
-                                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                                  {suggestion.accessibility.contrastRatio}
-                                </div>
-                              )}
-                            </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {suggestion.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center whitespace-nowrap bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium"
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
                         </div>
 
                         {/* Font Previews */}
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-2 gap-3 mb-4">
                           <FontPreview
                             font={suggestion.primaryFont}
                             label="Primary Font"
@@ -772,8 +779,8 @@ const FontSuggestions = () => {
                         )}
 
                         {/* Actions */}
-                        <div className="flex items-center justify-end pt-6 border-t border-gray-200">
-                          <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-end pt-4 border-t border-gray-200">
+                          <div className="flex items-center space-x-2">
                             <a
                               href={`https://fonts.google.com/specimen/${suggestion.primaryFont.name.replace(
                                 " ",
@@ -781,16 +788,22 @@ const FontSuggestions = () => {
                               )}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center bg-white border border-purple-200 text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors"
+                              className="flex items-center bg-white border border-purple-200 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-purple-50 transition-colors"
                             >
-                              <EyeIcon className="h-4 w-4 mr-1" />
-                              View on Google Fonts
+                              <EyeIcon className="hidden xs:inline h-4 w-4 xs:mr-1" />
+                              <span className="xs:hidden">View Font</span>
+                              <span className="hidden xs:inline">
+                                View on Google Fonts
+                              </span>
                             </a>
                             <button
                               onClick={() => setSelectedSuggestion(suggestion)}
-                              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-blue-700 transition-colors shadow-lg"
+                              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-purple-700 hover:to-blue-700 transition-colors shadow-lg"
                             >
-                              Preview Full
+                              <span className="xs:hidden">Preview</span>
+                              <span className="hidden xs:inline">
+                                Preview Full
+                              </span>
                             </button>
                           </div>
                         </div>
@@ -820,16 +833,16 @@ const FontSuggestions = () => {
             className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-xl font-bold text-gray-900">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-3 xs:px-6 py-2 xs:py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-sm xs:text-xl font-bold text-gray-900">
                 {selectedSuggestion.name} - Full Preview
               </h3>
               <button
                 onClick={() => setSelectedSuggestion(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                className="p-1 xs:p-2 text-gray-400 hover:text-gray-600 rounded-lg"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 xs:w-6 xs:h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -844,11 +857,11 @@ const FontSuggestions = () => {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-3 xs:p-6">
               {/* Large Typography Sample */}
-              <div className="mb-8 text-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8">
+              <div className="mb-4 xs:mb-8 text-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 xs:p-8">
                 <h1
-                  className="text-6xl font-bold mb-4 text-gray-900"
+                  className="text-base xs:text-6xl font-bold mb-2 xs:mb-4 text-gray-900"
                   style={{
                     fontFamily: `'${selectedSuggestion.primaryFont.name}', sans-serif`,
                   }}
@@ -856,7 +869,7 @@ const FontSuggestions = () => {
                   {selectedSuggestion.name}
                 </h1>
                 <h2
-                  className="text-3xl font-semibold mb-4 text-gray-700"
+                  className="text-xs xs:text-3xl font-semibold mb-2 xs:mb-4 text-gray-700"
                   style={{
                     fontFamily: `'${selectedSuggestion.secondaryFont.name}', serif`,
                   }}
@@ -865,7 +878,7 @@ const FontSuggestions = () => {
                     "Beautiful font pairings for modern design"}
                 </h2>
                 <p
-                  className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed"
+                  className="text-[8px] xs:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed"
                   style={{
                     fontFamily: `'${selectedSuggestion.primaryFont.name}', sans-serif`,
                   }}
@@ -876,14 +889,17 @@ const FontSuggestions = () => {
               </div>
 
               {/* Typography Scale */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900">
+              <div className="grid grid-cols-2 gap-3 xs:gap-6 mb-4 xs:mb-8">
+                <div className="space-y-2 xs:space-y-4">
+                  <h4 className="text-xs xs:text-base font-semibold text-gray-900">
                     {selectedSuggestion.primaryFont.name} Scale
                   </h4>
                   {[48, 36, 24, 18, 16, 14].map((size) => (
-                    <div key={size} className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-500 w-12 flex-shrink-0">
+                    <div
+                      key={size}
+                      className="flex items-center space-x-2 xs:space-x-4"
+                    >
+                      <span className="text-[10px] xs:text-sm text-gray-500 w-8 xs:w-12 flex-shrink-0">
                         {size}px
                       </span>
                       <div
@@ -901,13 +917,16 @@ const FontSuggestions = () => {
                   ))}
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900">
+                <div className="space-y-2 xs:space-y-4">
+                  <h4 className="text-xs xs:text-base font-semibold text-gray-900">
                     {selectedSuggestion.secondaryFont.name} Scale
                   </h4>
                   {[48, 36, 24, 18, 16, 14].map((size) => (
-                    <div key={size} className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-500 w-12 flex-shrink-0">
+                    <div
+                      key={size}
+                      className="flex items-center space-x-2 xs:space-x-4"
+                    >
+                      <span className="text-[10px] xs:text-sm text-gray-500 w-8 xs:w-12 flex-shrink-0">
                         {size}px
                       </span>
                       <div
@@ -927,11 +946,11 @@ const FontSuggestions = () => {
               </div>
 
               {/* Implementation Code */}
-              <div className="bg-gray-900 text-gray-100 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-semibold mb-3 text-green-400">
+              <div className="bg-gray-900 text-gray-100 rounded-lg p-2 xs:p-4 mb-3 xs:mb-6">
+                <h4 className="text-[10px] xs:text-sm font-semibold mb-2 xs:mb-3 text-green-400">
                   Complete CSS Implementation
                 </h4>
-                <pre className="text-sm overflow-x-auto">
+                <pre className="text-[9px] xs:text-sm overflow-x-auto">
                   <code>{`/* Import fonts */
 @import url('https://fonts.googleapis.com/css2?family=${selectedSuggestion.primaryFont.name.replace(
                     " ",
@@ -957,15 +976,15 @@ const FontSuggestions = () => {
                 </pre>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+              <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 xs:gap-0">
+                <div className="text-[10px] xs:text-sm text-gray-600">
                   <strong>Best for:</strong>{" "}
                   {selectedSuggestion.bestFor?.join(", ") ||
                     "Various applications"}
                 </div>
                 <button
                   onClick={() => exportFontCSS(selectedSuggestion)}
-                  className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors"
+                  className="bg-purple-600 text-white px-3 xs:px-6 py-1.5 xs:py-2 rounded-lg text-xs xs:text-sm font-semibold hover:bg-purple-700 transition-colors w-full xs:w-auto"
                 >
                   Export CSS
                 </button>

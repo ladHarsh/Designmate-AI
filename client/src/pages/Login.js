@@ -50,11 +50,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen overflow-auto bg-gradient-to-br from-purple-50 to-blue-50 flex items-start xs:items-center justify-center py-4 xs:py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full space-y-8"
+        className="max-w-md w-full space-y-2 xs:space-y-8 my-auto"
       >
         {/* Header */}
         <div className="text-center">
@@ -62,14 +62,14 @@ const Login = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl flex items-center justify-center"
+            className="hidden xs:flex mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl items-center justify-center"
           >
             <span className="text-white text-xl font-bold">D</span>
           </motion.div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <h2 className="mt-0 xs:mt-6 text-xl xs:text-2xl md:text-3xl font-bold text-gray-900">
             Welcome back
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-1 xs:mt-2 text-xs xs:text-sm text-gray-600">
             Sign in to your DesignMate AI account
           </p>
         </div>
@@ -79,10 +79,10 @@ const Login = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="mt-4 xs:mt-8 space-y-4 xs:space-y-6"
+          className="mt-2 xs:mt-8 space-y-3 xs:space-y-6"
           onSubmit={handleSubmit}
         >
-          <div className="space-y-3 xs:space-y-4">
+          <div className="space-y-2.5 xs:space-y-4">
             {/* Email */}
             <div>
               <label
@@ -92,8 +92,8 @@ const Login = () => {
                 Email address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-2 xs:pl-3 flex items-center pointer-events-none">
-                  <EnvelopeIcon className="h-4 w-4 xs:h-5 xs:w-5 text-gray-400" />
+                <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
+                  <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="email"
@@ -103,7 +103,7 @@ const Login = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="block w-full pl-8 xs:pl-10 pr-2 xs:pr-3 py-2 xs:py-3 text-sm xs:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-3 xs:pl-10 pr-3 py-2.5 xs:py-3 text-sm xs:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   placeholder="Enter your email"
                 />
               </div>
@@ -118,8 +118,8 @@ const Login = () => {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-2 xs:pl-3 flex items-center pointer-events-none">
-                  <LockClosedIcon className="h-4 w-4 xs:h-5 xs:w-5 text-gray-400" />
+                <div className="hidden xs:flex absolute inset-y-0 left-0 pl-3 items-center pointer-events-none">
+                  <LockClosedIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="password"
@@ -129,18 +129,18 @@ const Login = () => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-8 xs:pl-10 pr-10 xs:pr-12 py-2 xs:py-3 text-sm xs:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-3 xs:pl-10 pr-10 xs:pr-12 py-2.5 xs:py-3 text-sm xs:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-2 xs:pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-4 w-4 xs:h-5 xs:w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <EyeIcon className="h-4 w-4 xs:h-5 xs:w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
