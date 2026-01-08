@@ -95,22 +95,13 @@ app.use("/api/users", userRoutes);
 // Error handling middleware
 app.use(errorHandler);
 
-// Serve React build in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../client/build")));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+// 404 handler for unmatched routes
+app.use("*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
   });
-} else {
-  // 404 handler for development
-  app.use("*", (req, res) => {
-    res.status(404).json({
-      success: false,
-      message: "Route not found",
-    });
-  });
-}
+});
 
 // Database connection
 mongoose
