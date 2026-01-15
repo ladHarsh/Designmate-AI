@@ -243,11 +243,42 @@ npm run build
 npm start
 ```
 
-### Deployment Options
+## 🌐 Deployment (Vercel + Render)
 
-- **Frontend:** Vercel, Netlify, AWS S3 + CloudFront
-- **Backend:** Heroku, AWS EC2, DigitalOcean, Railway
-- **Database:** MongoDB Atlas (recommended)
+### Frontend (Vercel)
+
+1. Deploy the `client` folder to Vercel.
+2. In Vercel Project → Settings → Environment Variables, set:
+   - `REACT_APP_API_URL=https://designmate-ai.onrender.com/api`
+   - `REACT_APP_WS_URL=wss://designmate-ai.onrender.com`
+3. Build command: `npm run build`
+4. Output directory: `build`
+
+### Backend (Render)
+
+1. Deploy the `server` folder as a Web Service on Render.
+2. Set environment variables in Render dashboard:
+   - `PORT=10000` (Render sets this automatically)
+   - `NODE_ENV=production`
+   - `MONGODB_URI=mongodb+srv://DesignMate:Harsh%402817@designmate-ai.c3vuytv.mongodb.net/designmate-ai`
+   - `JWT_SECRET=your_jwt_secret_key`
+   - `GEMINI_API_KEY=your_gemini_api_key`
+   - `GEMINI_MODEL=gemini-2.5-flash`
+   - `GEMINI_FALLBACK_MODEL=gemini-2.5-flash`
+   - `CORS_ORIGIN=https://designmate-ai.vercel.app`
+3. Build command: `npm ci --omit=dev`
+4. Start command: `node index.js`
+
+### Cross-Origin Authentication
+
+- Cookies are set with `sameSite: 'none'` and `secure: true` in production for cross-origin authentication between Vercel and Render.
+- Users must log in again after deployment due to cookie changes.
+
+### Notes
+
+- Free Render services may sleep after inactivity, causing cold starts (30–60s delay).
+- For persistent uploads, use external storage (Cloudinary/S3) instead of local `/uploads`.
+- For local development, set `REACT_APP_API_URL` and `CORS_ORIGIN` to `http://localhost:5000` and `http://localhost:3000` respectively.
 
 ## 📝 Scripts
 
